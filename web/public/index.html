@@ -1,0 +1,1650 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow">
+<title>LVC 시나리오 설계 도우미</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: 작전 상황판 — 상단 탭(작성·검토·수정·카탈로그), 좌측 시나리오 목록, 우측 작업면(조건 · 지형도 · 단계 카드) */
+:root {
+  --bg: #e9ede8;
+  --surface: #fbfcfa;
+  --sunk: #dfe5df;
+  --ink: #17222a;
+  --muted: #55636b;
+  --line: #ccd5ce;
+  --accent: #b5501d;
+  --accent-ink: #ffffff;
+  --accent-soft: #f6e3d6;
+  --focus: #2a62a6;
+  --L: #4c6d2a; --L-bg: #e2ebd5;
+  --V: #2a62a6; --V-bg: #dbe6f4;
+  --C: #7a4c9d; --C-bg: #ebe0f3;
+  --ok: #2d7743; --ok-bg: #dcefe1;
+  --warn: #9a5f06; --warn-bg: #f7ead0;
+  --info: #2a62a6; --info-bg: #dbe6f4;
+  --vio: #7a4c9d; --vio-bg: #ebe0f3;
+  --neu: #5f6a70; --neu-bg: #e2e7e4;
+  --sea: #c6dbe2; --sea-deep: #afccd6; --land: #e6e8d6; --beach: #ebdbb0; --cliff: #b2a58d;
+  --urban: #c3c7ca; --road: #f8f5ea; --contour: #b9b99a; --map-ink: #34413a; --grid: rgba(30, 55, 45, .13);
+  --bf: #1d5cb0; --bf-bg: #cfe0f6; --rf: #c2262e; --rf-bg: #f6d3d4;
+  --f-sans: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11171a; --surface: #182024; --sunk: #0d1214; --ink: #e3eae6; --muted: #98a6a0; --line: #2b363a;
+    --accent: #e07b42; --accent-ink: #1a0d05; --accent-soft: #3a2518; --focus: #7fb0ea;
+    --L: #9cc06a; --L-bg: #25321a; --V: #77abe8; --V-bg: #18283b; --C: #be98df; --C-bg: #2c2139;
+    --ok: #78c98f; --ok-bg: #18301f; --warn: #e5b05a; --warn-bg: #352712; --info: #77abe8; --info-bg: #18283b;
+    --vio: #be98df; --vio-bg: #2c2139; --neu: #a3aeaa; --neu-bg: #242d30;
+    --sea: #1a313b; --sea-deep: #152831; --land: #252b22; --beach: #463f2b; --cliff: #4f4a3e;
+    --urban: #3a4146; --road: #59594a; --contour: #4b4d3a; --map-ink: #cdd6cf; --grid: rgba(200, 220, 210, .08);
+    --bf: #7fb2f0; --bf-bg: #17304f; --rf: #f07a7f; --rf-bg: #4a1c1f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11171a; --surface: #182024; --sunk: #0d1214; --ink: #e3eae6; --muted: #98a6a0; --line: #2b363a;
+  --accent: #e07b42; --accent-ink: #1a0d05; --accent-soft: #3a2518; --focus: #7fb0ea;
+  --L: #9cc06a; --L-bg: #25321a; --V: #77abe8; --V-bg: #18283b; --C: #be98df; --C-bg: #2c2139;
+  --ok: #78c98f; --ok-bg: #18301f; --warn: #e5b05a; --warn-bg: #352712; --info: #77abe8; --info-bg: #18283b;
+  --vio: #be98df; --vio-bg: #2c2139; --neu: #a3aeaa; --neu-bg: #242d30;
+  --sea: #1a313b; --sea-deep: #152831; --land: #252b22; --beach: #463f2b; --cliff: #4f4a3e;
+  --urban: #3a4146; --road: #59594a; --contour: #4b4d3a; --map-ink: #cdd6cf; --grid: rgba(200, 220, 210, .08);
+  --bf: #7fb2f0; --bf-bg: #17304f; --rf: #f07a7f; --rf-bg: #4a1c1f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-sans); font-size: 14px; line-height: 1.55; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+a { color: var(--info); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
+
+.mono { font-family: var(--f-mono); }
+.lab { font-family: var(--f-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+
+/* top bar */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 10px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; }
+.brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.brand h1 { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+.brand .tagline { font-size: 12px; color: var(--muted); }
+.tabs { display: flex; gap: 4px; overflow-x: auto; flex: 1 1 auto; min-width: 0; }
+.tab { border: 1px solid transparent; background: none; padding: 7px 12px; border-radius: var(--r); cursor: pointer; white-space: nowrap; color: var(--muted); font-weight: 500; display: inline-flex; gap: 6px; align-items: center; }
+.tab:hover { color: var(--ink); background: var(--sunk); }
+.tab[aria-current="page"] { color: var(--ink); background: var(--bg); border-color: var(--line); }
+.tab .sid { font-family: var(--f-mono); font-size: 11px; color: var(--muted); }
+.tab .badge { background: var(--accent); color: var(--accent-ink); border-radius: 10px; font-size: 11px; padding: 0 6px; font-family: var(--f-mono); }
+.who { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.who select { padding: 5px 8px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+
+.banner { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 7px; font-size: 13px; background: var(--warn-bg); color: var(--warn); border-bottom: 1px solid var(--line); }
+
+/* shell */
+.shell { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 18px; align-items: start;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px 40px; max-width: 1560px; margin: 0 auto; }
+.side { position: sticky; top: 76px; display: flex; flex-direction: column; gap: 8px; min-width: 0; max-height: calc(100vh - 96px); overflow: auto; }
+.side-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.side-head h2 { font-size: 13px; }
+.side-list { display: flex; flex-direction: column; gap: 6px; }
+.sitem { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 9px 10px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; }
+.sitem:hover { border-color: var(--muted); }
+.sitem[aria-current="true"] { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.sitem .t { font-weight: 500; font-size: 13px; line-height: 1.35; }
+.sitem .m { font-size: 11.5px; color: var(--muted); font-family: var(--f-mono); }
+.side-empty { font-size: 13px; color: var(--muted); padding: 10px; border: 1px dashed var(--line); border-radius: var(--r); }
+#view { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+
+/* generic */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; min-width: 0; }
+.panel > h2 { font-size: 15px; margin-bottom: 12px; }
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 7px 12px; border-radius: var(--r); cursor: pointer; font-weight: 500; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.btn:hover:not(:disabled) { border-color: var(--muted); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover:not(:disabled) { filter: brightness(1.06); border-color: var(--accent); }
+.btn.ok { background: var(--ok); color: var(--surface); border-color: var(--ok); }
+.btn.small { padding: 4px 9px; font-size: 12px; }
+.btn.wide { width: 100%; justify-content: center; padding: 10px; font-size: 14px; }
+.btn.ghost { background: none; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.hint { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label, .field .flab { font-size: 12px; color: var(--muted); font-weight: 500; }
+.field input, .field select, .field textarea, textarea.box, input.box { border: 1px solid var(--line); background: var(--bg); border-radius: var(--r); padding: 7px 9px; width: 100%; min-width: 0; }
+textarea.box, .field textarea { resize: vertical; min-height: 58px; }
+.form-grid { display: grid; gap: 12px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 1px 8px; border-radius: 10px; white-space: nowrap; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.st-작성중 { color: var(--neu); background: var(--neu-bg); }
+.st-검토요청 { color: var(--info); background: var(--info-bg); }
+.st-수정요청 { color: var(--warn); background: var(--warn-bg); }
+.st-재검토 { color: var(--vio); background: var(--vio-bg); }
+.st-승인 { color: var(--ok); background: var(--ok-bg); }
+.chip { font-family: var(--f-mono); font-weight: 600; font-size: 11.5px; padding: 1px 7px; border-radius: 4px; display: inline-flex; gap: 5px; align-items: center; }
+.chip small { font-family: var(--f-sans); font-weight: 500; font-size: 11px; }
+.m-L { color: var(--L); background: var(--L-bg); }
+.m-V { color: var(--V); background: var(--V-bg); }
+.m-C { color: var(--C); background: var(--C-bg); }
+.mini { font-family: var(--f-mono); font-size: 10.5px; font-weight: 600; padding: 0 4px; border-radius: 3px; }
+
+/* make */
+.make { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; align-items: start; }
+.result { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.sc-head { display: flex; flex-direction: column; gap: 10px; }
+.sc-title { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.sc-title h2 { font-size: 19px; letter-spacing: -.01em; }
+.sc-title .ver { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--muted); }
+.meta b { color: var(--ink); font-weight: 500; }
+.src { font-size: 11.5px; font-family: var(--f-mono); color: var(--muted); }
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.map-wrap { position: sticky; top: 76px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.map { width: 100%; height: auto; display: block; border: 1px solid var(--line); border-radius: var(--r); background: var(--land); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; color: var(--muted); align-items: center; }
+.cards { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+/* map svg */
+.m-land { fill: var(--land); } .m-sea { fill: var(--sea); } .m-deep { fill: var(--sea-deep); } .m-beach { fill: var(--beach); }
+.m-cliff { fill: var(--cliff); } .m-urban { fill: var(--urban); } .m-road { fill: none; stroke: var(--road); stroke-width: 5; stroke-linecap: round; }
+.m-roadline { fill: none; stroke: var(--contour); stroke-width: 1; stroke-dasharray: 4 4; }
+.m-contour { fill: none; stroke: var(--contour); stroke-width: 1.1; }
+.m-edge { fill: none; stroke: var(--map-ink); stroke-width: 1; stroke-dasharray: 2 3; opacity: .55; }
+.m-river { fill: none; stroke: var(--sea); stroke-width: 9; stroke-linecap: round; }
+.m-obst { stroke: var(--map-ink); stroke-width: 1.4; opacity: .7; }
+.m-grid { stroke: var(--grid); stroke-width: 1; }
+.m-gridtxt { fill: var(--map-ink); opacity: .55; font-family: var(--f-mono); font-size: 9px; }
+.m-txt { fill: var(--map-ink); font-family: var(--f-sans); font-size: 11px; opacity: .75; }
+.m-title { fill: var(--map-ink); font-family: var(--f-sans); font-size: 12px; font-weight: 700; }
+.m-plate { fill: var(--surface); opacity: .85; }
+.m-north { fill: var(--map-ink); }
+.m-route { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 6 5; opacity: .85; }
+.m-ptlabel { fill: var(--ink); font-family: var(--f-sans); font-size: 10.5px; font-weight: 500; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+.mk { cursor: pointer; }
+.mk-dot { stroke: var(--surface); stroke-width: 2; }
+.mk-L .mk-dot { fill: var(--L); } .mk-V .mk-dot { fill: var(--V); } .mk-C .mk-dot { fill: var(--C); }
+.mk-ring { fill: none; stroke: var(--accent); stroke-width: 2.5; opacity: 0; }
+.mk.on .mk-ring { opacity: 1; }
+.f-blue .fr { fill: var(--bf-bg); stroke: var(--bf); stroke-width: 1.6; }
+.f-red .fr { fill: var(--rf-bg); stroke: var(--rf); stroke-width: 1.6; }
+.f-blue .gl { stroke: var(--bf); fill: none; stroke-width: 1.4; } .f-red .gl { stroke: var(--rf); fill: none; stroke-width: 1.4; }
+.f-blue .gd { fill: var(--bf); } .f-red .gd { fill: var(--rf); }
+.f-size { font-family: var(--f-mono); font-size: 8.5px; font-weight: 600; text-anchor: middle; }
+.f-blue .f-size { fill: var(--bf); } .f-red .f-size { fill: var(--rf); }
+.f-lab { font-family: var(--f-sans); font-size: 9.5px; font-weight: 500; text-anchor: middle; fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+.m-assault { fill: none; stroke: var(--bf); stroke-width: 3; opacity: .8; }
+.m-arrowhead { fill: var(--bf); }
+.m-red-axis { fill: none; stroke: var(--rf); stroke-width: 2; stroke-dasharray: 3 3; opacity: .75; }
+.m-red-head { fill: var(--rf); }
+.m-forcenote { fill: var(--map-ink); font-family: var(--f-sans); font-size: 10px; }
+.sym { display: inline-flex; vertical-align: middle; }
+.doctrine { display: flex; flex-direction: column; gap: 6px; }
+.doctrine ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.doctrine li b { font-weight: 600; }
+.equip { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 10px; align-items: center; }
+.equip svg { width: 120px; height: auto; }
+.equip p { margin: 0; font-size: 13px; }
+.doctrine ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.inj-wrap { overflow-x: auto; }
+.inj { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.inj th, .inj td { border-top: 1px solid var(--line); padding: 5px 6px; text-align: left; vertical-align: top; }
+.inj th { font-family: var(--f-mono); font-size: 11px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.inj td.cite { color: var(--muted); white-space: nowrap; font-size: 11.5px; }
+.srcs { margin: 0; padding-left: 20px; font-size: 12.5px; display: flex; flex-direction: column; gap: 3px; }
+/* 사후검토 */
+.mk.future { opacity: .22; }
+.aar-ctl { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.aar-ctl input[type=range] { flex: 1; min-width: 140px; accent-color: var(--accent); }
+.aar-ctl .pos { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.tl { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 2px; }
+.tl-i { flex: 1 0 92px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 6px 7px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 2px; font-size: 12px; border-top: 3px solid var(--line); }
+.tl-i small { font-family: var(--f-mono); font-size: 10.5px; color: var(--muted); }
+.tl-i[aria-current="true"] { outline: 2px solid var(--accent); outline-offset: -1px; }
+.tl-i.r-success { border-top-color: var(--ok); } .tl-i.r-partial { border-top-color: var(--warn); } .tl-i.r-fail { border-top-color: var(--accent); }
+.aar-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.aar-form .full { grid-column: 1 / -1; }
+.ev-list { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; }
+.ev-list label { display: flex; gap: 6px; align-items: flex-start; }
+.recs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.rec { border: 1px solid var(--line); border-left: 4px solid var(--muted); border-radius: var(--r); padding: 7px 9px; background: var(--bg); }
+.rec.rk-fix { border-left-color: var(--accent); } .rec.rk-keep { border-left-color: var(--ok); } .rec.rk-check { border-left-color: var(--muted); }
+.rec-top { display: flex; gap: 7px; align-items: baseline; font-size: 13px; }
+.rec .rk { font-family: var(--f-mono); font-size: 10.5px; font-weight: 600; padding: 0 5px; border-radius: 3px; background: var(--sunk); white-space: nowrap; }
+.rec.rk-fix .rk { background: var(--accent-soft); color: var(--accent); }
+.rec p { margin: 3px 0 0; font-size: 12.5px; color: var(--muted); }
+.rec .cites { margin-top: 3px; font-size: 11.5px; color: var(--muted); }
+@media (max-width: 720px) { .aar-form { grid-template-columns: minmax(0, 1fr); } }
+.eq-body { fill: var(--bf-bg); stroke: var(--bf); stroke-width: 1.6; }
+.eq-solid { fill: var(--bf); opacity: .85; }
+.eq-wheel { fill: var(--surface); stroke: var(--bf); }
+.eq-line { fill: none; stroke: var(--bf); opacity: .7; }
+.eq-txt { fill: var(--bf); font-family: var(--f-sans); font-size: 8px; text-anchor: middle; }
+.mk-num { fill: var(--surface); font-family: var(--f-mono); font-size: 11px; font-weight: 600; text-anchor: middle; pointer-events: none; }
+
+/* phase card */
+.phase { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 13px 14px; display: flex; flex-direction: column; gap: 9px; min-width: 0; cursor: default; transition: border-color .15s; }
+.phase.is-active { border-color: var(--accent); }
+.ph-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.ph-no { font-family: var(--f-mono); font-size: 11.5px; font-weight: 600; color: var(--accent); }
+.ph-head h3 { font-size: 15px; }
+.ph-when { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); }
+.ph-head .lvc { margin-left: auto; display: flex; gap: 4px; }
+.ph-content { margin: 0; }
+.ph-sec { display: flex; flex-direction: column; gap: 3px; }
+.ph-sec p { margin: 0; color: var(--ink); font-size: 13px; }
+.tech { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.tech li { border-left: 2px solid var(--accent); padding: 2px 0 2px 10px; }
+.tech-top { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.tech-top b { font-weight: 600; font-size: 13px; }
+.tech li p { margin: 1px 0 0; font-size: 13px; }
+.tag-concept { font-size: 10.5px; padding: 0 5px; border-radius: 3px; color: var(--warn); background: var(--warn-bg); }
+.refs { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.threat { font-size: 12.5px; background: var(--accent-soft); border-radius: 4px; padding: 6px 9px; }
+.ph-loc { font-size: 11.5px; color: var(--muted); font-family: var(--f-mono); }
+
+/* comments */
+.cmts { display: flex; flex-direction: column; gap: 6px; border-top: 1px dashed var(--line); padding-top: 9px; }
+.cmt { background: var(--bg); border-radius: 4px; padding: 7px 9px; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
+.cmt .ch { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; font-size: 11.5px; color: var(--muted); }
+.cmt .ch b { color: var(--ink); font-weight: 600; }
+.cmt p { margin: 0; white-space: pre-wrap; }
+.cs { font-size: 11px; font-weight: 600; padding: 0 6px; border-radius: 3px; }
+.cs-open { color: var(--warn); background: var(--warn-bg); }
+.cs-applied { color: var(--ok); background: var(--ok-bg); }
+.cs-rejected { color: var(--neu); background: var(--neu-bg); }
+.cs-info { color: var(--info); background: var(--info-bg); }
+.decide { display: flex; flex-direction: column; gap: 10px; }
+
+/* revise */
+.rev-row { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.rev-side { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.rev-side h4 { margin: 0; font-size: 12px; }
+.prop { border: 1px solid var(--accent); border-radius: var(--r); padding: 10px; background: var(--surface); display: flex; flex-direction: column; gap: 8px; }
+.diff { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.diff th, .diff td { border-top: 1px solid var(--line); padding: 5px 6px; text-align: left; vertical-align: top; }
+.diff th { color: var(--muted); font-weight: 500; white-space: nowrap; width: 80px; }
+.diff td.ch-before { color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 50%, transparent); }
+.diff tr.same td { color: var(--muted); }
+.diff tr.changed th { color: var(--accent); }
+.diff-wrap { overflow-x: auto; }
+.edit { background: var(--surface); border: 1px solid var(--accent); border-radius: var(--r); padding: 13px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.techrow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; gap: 6px; }
+.techrow select, .techrow input { border: 1px solid var(--line); background: var(--bg); border-radius: var(--r); padding: 6px 8px; min-width: 0; }
+.checks { display: flex; gap: 12px; }
+.checks label { display: inline-flex; gap: 5px; align-items: center; font-size: 13px; }
+.hist { display: flex; flex-direction: column; }
+.hrow { display: grid; grid-template-columns: 52px 92px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 8px 4px; border-top: 1px solid var(--line); cursor: pointer; background: none; border-left: 0; border-right: 0; border-bottom: 0; text-align: left; width: 100%; }
+.hrow:hover { background: var(--bg); }
+.hrow .v { font-family: var(--f-mono); font-weight: 600; }
+.hrow .k { font-size: 12px; color: var(--muted); }
+.hrow .d { min-width: 0; font-size: 13px; }
+.hrow .w { font-size: 11.5px; color: var(--muted); font-family: var(--f-mono); white-space: nowrap; }
+.hdetail { padding: 6px 4px 12px; }
+.summary { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; }
+.summary b { font-family: var(--f-mono); }
+.gate { max-width: 420px; display: flex; flex-direction: column; gap: 10px; }
+.empty { color: var(--muted); }
+.gen { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.bar { width: 100%; height: 4px; background: var(--sunk); border-radius: 2px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 40%; background: var(--accent); animation: slide 1.4s ease-in-out infinite; }
+@keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(260%); } }
+.preview-list { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.preview-list li { display: flex; gap: 10px; align-items: center; font-size: 13px; padding: 6px 0; border-top: 1px solid var(--line); }
+.preview-list .lvc { margin-left: auto; display: flex; gap: 4px; }
+table.cat { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.cat th, table.cat td { border-top: 1px solid var(--line); padding: 8px 6px; text-align: left; vertical-align: top; }
+table.cat th { font-size: 12px; color: var(--muted); font-weight: 500; }
+table.cat input { border: 1px solid var(--line); background: var(--bg); border-radius: 4px; padding: 5px 7px; width: 100%; min-width: 120px; }
+.tbl { overflow-x: auto; }
+#toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--surface); padding: 9px 16px; border-radius: var(--r); font-size: 13px; z-index: 20; max-width: calc(100vw - 32px); }
+#pdfStage { position: absolute; left: -12000px; top: 0; width: 760px; }
+
+/* report (PDF) — fixed light palette */
+.rp { --surface: #ffffff; --ink: #17222a; --muted: #55636b; --line: #ccd5ce; --accent: #b5501d; --accent-soft: #f6e3d6; --bg: #f2f4f1;
+  --L: #4c6d2a; --L-bg: #e2ebd5; --V: #2a62a6; --V-bg: #dbe6f4; --C: #7a4c9d; --C-bg: #ebe0f3; --warn: #9a5f06; --warn-bg: #f7ead0;
+  --sea: #c6dbe2; --sea-deep: #afccd6; --land: #e6e8d6; --beach: #ebdbb0; --cliff: #b2a58d; --urban: #c3c7ca; --road: #f8f5ea; --contour: #b9b99a; --map-ink: #34413a; --grid: rgba(30, 55, 45, .13);
+  --bf: #1d5cb0; --bf-bg: #cfe0f6; --rf: #c2262e; --rf-bg: #f6d3d4;
+  background: #ffffff; color: #17222a; font-family: var(--f-sans); font-size: 13px; line-height: 1.55; }
+.rp-block { background: #ffffff; padding: 10px 4px; }
+.rp h1 { font-size: 21px; margin-bottom: 4px; }
+.rp .rp-cls { font-family: var(--f-mono); font-size: 11px; color: #9a5f06; letter-spacing: .06em; }
+.rp table { width: 100%; border-collapse: collapse; }
+.rp td, .rp th { border: 1px solid #ccd5ce; padding: 5px 8px; text-align: left; vertical-align: top; font-size: 12px; }
+.rp th { background: #f2f4f1; font-weight: 500; width: 110px; }
+.rp h2 { font-size: 15px; margin: 6px 0 8px; }
+.rp .phase { border-color: #ccd5ce; }
+.rp .map { border-color: #ccd5ce; }
+
+@media (max-width: 1240px) { .make { grid-template-columns: minmax(0, 1fr); } .board { grid-template-columns: minmax(0, 1fr); } .map-wrap { position: static; } }
+@media (max-width: 900px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .side { position: static; max-height: none; }
+  .side-list { flex-direction: row; overflow-x: auto; padding-bottom: 4px; }
+  .sitem { min-width: 210px; }
+  .rev-row { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 520px) { .two { grid-template-columns: 1fr; } .brand .tagline { display: none; } .hrow { grid-template-columns: 44px minmax(0, 1fr); } .hrow .k, .hrow .w { grid-column: 2; } .techrow { grid-template-columns: 1fr; } }
+</style>
+
+<header class="top">
+  <div class="brand"><h1>LVC 시나리오 설계 도우미</h1><span class="tagline">가상 데이터 전용 · 해커톤 MVP</span></div>
+  <nav class="tabs" id="tabs" aria-label="화면"></nav>
+  <div class="who" id="who"></div>
+</header>
+<div class="banner" id="banner" hidden></div>
+<main class="shell">
+  <aside class="side" id="side"></aside>
+  <section id="view" aria-live="polite"></section>
+</main>
+<div id="toast" hidden></div>
+<div id="pdfStage" aria-hidden="true"></div>
+
+<script src="/claude-shim.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+"use strict";
+/* ───────────── 도메인 데이터 (PRD 6장, 전부 가상) ───────────── */
+const UNITS = ["소대급", "중대급", "대대급", "연대급"];
+const SITE_TYPES = ["사격장", "시가지/장애물 교장", "전투연병장", "광역 산악 훈련장", "전술훈련장", "공지종합사격장", "상륙훈련장", "해상/수중침투 훈련장"];
+const AUTHORS = ["담당관 김가람", "담당관 이도윤", "담당관 박서진", "담당관 최하율", "담당관 정무진"];
+const REVIEWERS = ["검토관 한빛", "검토관 누리", "검토관 다온", "검토관 라온", "검토관 새봄", "검토관 아라"];
+const ACCESS_CODE = "LVC2026";
+const MODES = { L: "실기동", V: "가상", C: "모의" };
+
+const CATALOG0 = [
+  { id: "drone", name: "정찰·자폭 드론", use: "정찰, 장애물 식별, 화력 지원", modes: ["L", "V"], kw: "Marine Corps drone reconnaissance", alias: ["드론"] },
+  { id: "usv", name: "무인수상정", use: "해상 접근로 정찰, 기만", modes: ["L", "C"], kw: "unmanned surface vessel Marines", alias: ["무인수상정", "수상정", "USV"] },
+  { id: "ugv", name: "지상 로봇 (피지컬 AI)", use: "보급, 정찰, 장애물 개척", modes: ["L"], kw: "unmanned ground vehicle Marines", alias: ["지상 로봇", "지상로봇", "UGV", "피지컬"] },
+  { id: "arvr", name: "AR·VR 가상훈련 장비", use: "투입 지역 사전 숙달, 절차 훈련", modes: ["V"], kw: "Marines virtual reality training", alias: ["AR", "VR", "가상훈련 장비"] },
+  { id: "wargame", name: "모의 워게임 시스템", use: "방책 비교, 다회 반복", modes: ["C"], kw: "Marine Corps wargaming simulation", alias: ["워게임"] },
+  { id: "twin", name: "디지털 트윈 훈련장", use: "실지형 동기화, 배치안 비교", modes: ["V", "C"], kw: "digital twin military training", alias: ["디지털 트윈", "트윈"] },
+  { id: "redbot", name: "AI 대항군 로봇", use: "지능형 대항군(Red Team) 역할", modes: ["L"], kw: "robotic targets opposing force training", alias: ["대항군 로봇", "AI 대항군"] },
+  { id: "exo", name: "웨어러블 외골격 트레이너", use: "고강도 기동 근력 보조, 자세 교정", modes: ["L"], kw: "military exoskeleton", alias: ["외골격"], concept: true },
+  { id: "logibot", name: "자율주행 물류 로봇", use: "부대 간 물자 이송", modes: ["L"], kw: "autonomous resupply vehicle Marines", alias: ["물류 로봇", "물류"] },
+  { id: "cuas", name: "대드론(C-UAS) 체계", use: "적 드론 탐지·식별·무력화", modes: ["L", "V", "C"], kw: "counter-UAS training Marines", alias: ["대드론", "C-UAS", "안티드론", "드론 방어"] },
+  { id: "fpv", name: "FPV 드론", use: "고착·차단 타격, 근거리 정찰", modes: ["L", "V"], kw: "FPV drone training Marines", alias: ["FPV"] },
+  { id: "fofpv", name: "광섬유 FPV 드론", use: "재밍 환경 타격 (케이블이 조종사 위치를 노출)", modes: ["L", "V"], kw: "fiber optic FPV drone", alias: ["광섬유"] },
+  { id: "aistaff", name: "AI 전투참모 (HITL)", use: "방책·표적 후보 제시, 결심은 사람", modes: ["C", "V"], kw: "AI decision support human in the loop military", alias: ["AI 전투참모", "AI 참모", "HITL"] },
+  { id: "iff", name: "UWB·LoRa 피아식별", use: "통신 두절 하 아군 위치 공유, 오사 방지", modes: ["L"], kw: "blue force tracking dismounted soldier", alias: ["피아식별", "UWB", "LoRa"] },
+];
+const ENEMY_SIZES = ["없음", "소대급", "중대급", "대대급", "연대급", "사단급"];
+const sizeRank = s => ["소대급", "중대급", "대대급", "연대급", "사단급"].indexOf(s);
+
+const THREATS = [
+  { id: "0", name: "없음" },
+  { id: "1", name: "무인 1파 상륙", goal: "무인 선두에 진지 노출 없이 대응", rel: "전략도서방어", kw: "unmanned drone boats first wave landing" },
+  { id: "2", name: "로봇 장애물 돌파", goal: "장애물과 감시·센서 연계", rel: "전략도서방어", kw: "robot obstacle breaching military" },
+  { id: "3", name: "유무인 후방 침투", goal: "후방 지역 경계, 증원로 보호", rel: "신속대응", kw: "manned unmanned infiltration rear area security" },
+  { id: "4", name: "통신·통제 교란", goal: "전자전 환경에서 무인체계 운용 유지", rel: "전 작전", kw: "electronic warfare drone jamming" },
+  { id: "5", name: "아군 MUM-T 적용 (거울)", goal: "아군 정찰·보급 무인화", rel: "상륙", kw: "Marine Corps manned unmanned teaming" },
+  { id: "6", name: "적 드론 공격 (정찰·자폭)", goal: "탐지→식별→판단→무력화 절차와 수동 방호", rel: "전 작전", kw: "counter drone defense loitering munition" },
+];
+
+/* 가상 지형도 — 실제 훈련장과 무관한 해외 해안 지형을 단순화해 그린 그림 */
+function townBlocks(x0, y0, x1, y1, seed) {
+  let s = seed, out = "";
+  const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  for (let y = y0; y < y1; y += 22) for (let x = x0; x < x1; x += 24) {
+    if (rnd() < 0.22) continue;
+    out += `<rect class="m-urban" x="${x + rnd() * 4}" y="${y + rnd() * 4}" width="${12 + rnd() * 8}" height="${10 + rnd() * 7}" rx="1"/>`;
+  }
+  return out;
+}
+const FIELDS = {
+  A: {
+    name: "가상 훈련장 A", desc: "넓은 해변 + 배후 절벽·시가지", op: "amph",
+    points: [
+      { key: "A1", name: "해상 집결지(함정)", x: 505, y: 338 }, { key: "A2", name: "해상 접근 항로", x: 392, y: 296 },
+      { key: "A3", name: "해안 장애물 지대", x: 300, y: 246 }, { key: "A4", name: "돌격 해안", x: 236, y: 224 },
+      { key: "A5", name: "교두보 목표 고지", x: 232, y: 152 }, { key: "A6", name: "배후 시가지", x: 470, y: 118 },
+    ],
+    draw: () => `
+      <path class="m-cliff" d="M0 0 H196 C186 60 212 108 198 150 C168 190 90 205 0 214Z"/>
+      <path class="m-edge" d="M0 214 C90 205 168 190 198 150 C212 108 186 60 196 0"/>
+      <path class="m-beach" d="M0 214 C90 205 168 190 210 204 C300 226 420 212 600 220 L600 262 C460 252 330 266 220 258 C140 252 60 250 0 252Z"/>
+      <path class="m-sea" d="M0 252 C60 250 140 252 220 258 C330 266 460 252 600 262 V380 H0Z"/>
+      <path class="m-deep" d="M0 322 C150 310 300 334 600 314 V380 H0Z"/>
+      <ellipse class="m-contour" cx="232" cy="152" rx="70" ry="44"/><ellipse class="m-contour" cx="232" cy="150" rx="46" ry="28"/><ellipse class="m-contour" cx="232" cy="149" rx="22" ry="13"/>
+      ${townBlocks(380, 58, 575, 196, 7)}
+      <path class="m-road" d="M262 214 C285 182 330 160 420 136 S 540 110 600 104"/><path class="m-roadline" d="M262 214 C285 182 330 160 420 136 S 540 110 600 104"/>
+      ${Array.from({ length: 10 }, (_, i) => { const x = 236 + i * 15, y = 240 + (i % 2) * 5; return `<path class="m-obst" d="M${x - 4} ${y - 4} L${x + 4} ${y + 4} M${x + 4} ${y - 4} L${x - 4} ${y + 4}"/>`; }).join("")}
+      <text class="m-txt" x="40" y="110">절벽</text><text class="m-txt" x="520" y="214">해변</text><text class="m-txt" x="60" y="300">외해</text>`,
+  },
+  B: {
+    name: "가상 훈련장 B", desc: "본토에서 떨어진 소규모 바위섬", op: "island",
+    points: [
+      { key: "B1", name: "정상 관측소", x: 300, y: 160 }, { key: "B2", name: "원해 접근로", x: 520, y: 322 },
+      { key: "B3", name: "남측 해안 진지", x: 336, y: 268 }, { key: "B4", name: "역습 집결지", x: 386, y: 186 },
+      { key: "B5", name: "섬 보급항", x: 206, y: 236 }, { key: "B6", name: "본토 지원기지", x: 70, y: 34 },
+    ],
+    draw: () => `
+      <rect class="m-sea" x="0" y="0" width="600" height="380"/>
+      <path class="m-deep" d="M0 300 C140 280 380 330 600 290 V380 H0Z"/>
+      <path class="m-land" d="M0 0 H180 C160 30 100 54 0 74Z"/>
+      <path class="m-beach" d="M172 210 C162 146 216 102 290 97 C364 92 428 130 438 188 C448 244 404 282 342 288 C278 298 226 276 194 254 C182 242 174 226 172 210Z"/>
+      <path class="m-land" d="M182 210 C174 152 222 112 290 107 C358 102 418 136 428 190 C436 240 398 272 340 278 C282 286 232 268 202 248 C192 238 184 224 182 210Z"/>
+      <ellipse class="m-contour" cx="300" cy="166" rx="96" ry="62"/><ellipse class="m-contour" cx="300" cy="163" rx="62" ry="38"/><ellipse class="m-contour" cx="300" cy="161" rx="30" ry="18"/>
+      <path class="m-cliff" d="M420 160 l14 6 l-4 16 l-14 -4Z"/><path class="m-cliff" d="M452 222 l10 4 l-3 10 l-11 -3Z"/><path class="m-cliff" d="M160 170 l9 -6 l6 10 l-10 5Z"/>
+      <path class="m-road" style="stroke-width:3" d="M206 236 C240 220 270 196 300 166 C330 176 360 182 386 186"/>
+      <path class="m-roadline" d="M206 236 L176 252 M182 246 L170 238"/>
+      <text class="m-txt" x="20" y="24">본토</text><text class="m-txt" x="460" y="120">외해</text>`,
+  },
+  C: {
+    name: "가상 훈련장 C", desc: "해안 배후 내륙·시가지", op: "rapid",
+    points: [
+      { key: "C1", name: "주둔지 상황실", x: 100, y: 312 }, { key: "C2", name: "출동 준비지역", x: 168, y: 262 },
+      { key: "C3", name: "전개 축선(교량)", x: 292, y: 224 }, { key: "C4", name: "시가지 현장", x: 452, y: 140 },
+      { key: "C5", name: "외곽 차단선", x: 530, y: 222 }, { key: "C6", name: "복귀 집결지", x: 120, y: 350 },
+    ],
+    draw: () => `
+      <path class="m-sea" d="M0 0 H62 C50 120 82 240 52 380 H0Z"/>
+      <path class="m-beach" d="M62 0 H74 C62 120 94 240 64 380 H52 C82 240 50 120 62 0Z"/>
+      <path class="m-river" d="M262 0 C276 96 302 176 292 252 C286 312 300 352 312 380"/>
+      ${townBlocks(392, 70, 578, 206, 3)}
+      <ellipse class="m-contour" cx="190" cy="110" rx="70" ry="40"/><ellipse class="m-contour" cx="190" cy="108" rx="38" ry="20"/>
+      <path class="m-road" d="M100 316 C150 280 220 236 292 224 C360 210 410 170 452 140"/><path class="m-roadline" d="M100 316 C150 280 220 236 292 224 C360 210 410 170 452 140"/>
+      <path class="m-road" style="stroke-width:3" d="M452 140 C490 170 520 196 530 222"/>
+      <rect class="m-cliff" x="80" y="300" width="46" height="30" rx="2" opacity=".7"/>
+      <text class="m-txt" x="8" y="200">해안</text><text class="m-txt" x="150" y="90">구릉</text><text class="m-txt" x="300" y="40">하천</text>`,
+  },
+  D: {
+    name: "가상 훈련장 D", desc: "해안 → 개활지·구릉 → 시가지, 측방 산악", op: "mumt",
+    points: [
+      { key: "D1", name: "해안 교두보", x: 92, y: 318 }, { key: "D2", name: "중대 지휘소·집결지", x: 160, y: 238 },
+      { key: "D3", name: "구릉 관측선", x: 262, y: 186 }, { key: "D4", name: "FPV 운용 지점", x: 318, y: 236 },
+      { key: "D5", name: "UGV 측방 오프셋", x: 392, y: 318 }, { key: "D6", name: "시가지 외곽 거점", x: 440, y: 238, side: "right" },
+      { key: "D7", name: "건물·지하 진입구", x: 562, y: 184 }, { key: "D8", name: "적 증원로", x: 556, y: 312 },
+    ],
+    draw: () => `
+      <path class="m-sea" d="M0 250 C50 262 104 300 128 380 H0Z"/>
+      <path class="m-beach" d="M0 236 C62 248 120 290 146 380 H128 C104 300 50 262 0 250Z"/>
+      <ellipse class="m-contour" cx="370" cy="54" rx="150" ry="48"/><ellipse class="m-contour" cx="370" cy="48" rx="104" ry="32"/><ellipse class="m-contour" cx="372" cy="44" rx="60" ry="18"/><ellipse class="m-contour" cx="374" cy="42" rx="24" ry="8"/>
+      <ellipse class="m-contour" cx="262" cy="200" rx="64" ry="34"/><ellipse class="m-contour" cx="262" cy="198" rx="34" ry="17"/>
+      ${townBlocks(432, 112, 590, 252, 11)}
+      <path class="m-road" d="M110 300 C170 262 220 232 300 226 C370 220 420 214 470 206"/><path class="m-roadline" d="M110 300 C170 262 220 232 300 226 C370 220 420 214 470 206"/>
+      <path class="m-road" style="stroke-width:3" d="M600 340 C570 318 540 280 520 246"/>
+      ${Array.from({ length: 6 }, (_, i) => { const x = 418 + i * 9, y = 232 + (i % 2) * 6; return `<path class="m-obst" d="M${x - 4} ${y - 4} L${x + 4} ${y + 4} M${x + 4} ${y - 4} L${x - 4} ${y + 4}"/>`; }).join("")}
+      <text class="m-txt" x="14" y="330">해상</text><text class="m-txt" x="200" y="140">구릉</text><text class="m-txt" x="200" y="304">개활지</text><text class="m-txt" x="462" y="40">측방 산악</text><text class="m-txt" x="520" y="104">시가지</text>`,
+  },
+};
+
+/* 지형도 위 부대 배치 — 가상 지형 위 예시 배치, 실제 부대·위치 아님.
+   t: inf 보병 · mech 기계화 · art 포병 · hq 지휘소 · ad 대공·대드론 · uas 드론 · ship 함정 · usv 무인수상정 · aav 상륙돌격장갑차 · cd 해안포 · ugv 지상 무인차량 · op 관측소 */
+const FORCES = {
+  A: {
+    note: "청군: 해병대 상륙 제대 · 적색군: 가상 해안방어사단(북한군 편제 가정)",
+    blue: [
+      { x: 545, y: 300, t: "ship", s: "", lab: "상륙함 전단" },
+      { x: 345, y: 336, t: "aav", s: "II", lab: "KAAV 1파" },
+      { x: 175, y: 338, t: "aav", s: "I", lab: "KAAV 2파" },
+      { x: 440, y: 255, t: "uas", s: "", lab: "정찰 드론" },
+      { x: 568, y: 244, t: "usv", s: "", lab: "무인수상정" },
+    ],
+    assault: [[345, 324, 262, 246], [175, 326, 205, 252]],
+    red: [
+      { x: 350, y: 196, t: "inf", s: "II", lab: "해안방어 대대" },
+      { x: 545, y: 192, t: "inf", s: "II", lab: "해안방어 대대" },
+      { x: 112, y: 168, t: "cd", s: "", lab: "절벽 해안포" },
+      { x: 300, y: 98, t: "mech", s: "III", lab: "기계화 예비 연대" },
+      { x: 128, y: 62, t: "art", s: "III", lab: "포병 연대" },
+      { x: 420, y: 46, t: "ad", s: "", lab: "대공·전자전" },
+      { x: 70, y: 120, t: "uas", s: "", lab: "자폭드론 운용조" },
+      { x: 548, y: 36, t: "hq", s: "XX", lab: "사단 지휘소" },
+    ],
+    counter: [[300, 112, 300, 180]],
+  },
+  B: {
+    note: "청군: 도서 방어 부대 · 적색군: 가상 상륙 세력",
+    blue: [
+      { x: 262, y: 206, t: "inf", s: "I", lab: "도서 방어 중대" },
+      { x: 330, y: 132, t: "ad", s: "", lab: "대공·대드론" },
+    ],
+    assault: [],
+    red: [
+      { x: 470, y: 262, t: "usv", s: "", lab: "무인 선두파" },
+      { x: 560, y: 340, t: "ship", s: "", lab: "상륙 주력" },
+      { x: 530, y: 220, t: "uas", s: "", lab: "자폭드론" },
+    ],
+    counter: [[470, 262, 360, 266], [560, 340, 420, 300]],
+  },
+  C: {
+    note: "청군: 신속대응 부대 · 적색군: 가상 유무인 침투조",
+    blue: [
+      { x: 140, y: 300, t: "mech", s: "II", lab: "신속대응 대대" },
+    ],
+    assault: [],
+    red: [
+      { x: 505, y: 104, t: "inf", s: "I", lab: "침투조" },
+      { x: 560, y: 160, t: "uas", s: "", lab: "적 드론" },
+    ],
+    counter: [],
+  },
+  D: {
+    note: "청군: 해병 중대(+) 유무인 복합 편성 · 적색군: 가상 기계화보병 소대(+) 지역방어",
+    blue: [
+      { x: 118, y: 262, t: "hq", s: "I", lab: "중대본부·AI 참모" },
+      { x: 262, y: 296, t: "inf", s: "•••", lab: "소총소대×3" },
+      { x: 112, y: 200, t: "art", s: "•••", lab: "화기소대" },
+      { x: 352, y: 296, t: "uas", s: "", lab: "드론반" },
+      { x: 330, y: 352, t: "ugv", s: "", lab: "UGV조" },
+      { x: 186, y: 336, t: "ad", s: "", lab: "대드론·EW조" },
+      { x: 56, y: 296, t: "aav", s: "", lab: "방호차량×2" },
+    ],
+    assault: [[276, 286, 426, 220], [352, 346, 436, 264]],
+    red: [
+      { x: 486, y: 132, t: "mech", s: "•••", lab: "기계화보병 소대(+)" },
+      { x: 380, y: 66, t: "op", s: "", lab: "산악 관측소(OP)" },
+      { x: 578, y: 236, t: "ad", s: "", lab: "차량 재머" },
+      { x: 562, y: 94, t: "uas", s: "", lab: "정찰·FPV조" },
+    ],
+    counter: [[596, 352, 532, 256]],
+  },
+};
+function unitSym(u, side, scale = 1) {
+  const blue = side === "blue";
+  const frame = blue ? `<rect class="fr" x="-13" y="-9" width="26" height="18" rx="1"/>` : `<path class="fr" d="M0 -13 L15 0 L0 13 L-15 0Z"/>`;
+  const k = blue ? 1 : 0.6;
+  const g = {
+    inf: `<path class="gl" d="M${-13 * k} ${-9 * k} L${13 * k} ${9 * k} M${13 * k} ${-9 * k} L${-13 * k} ${9 * k}"/>`,
+    mech: `<path class="gl" d="M${-13 * k} ${-9 * k} L${13 * k} ${9 * k} M${13 * k} ${-9 * k} L${-13 * k} ${9 * k}"/><ellipse class="gl" rx="${9 * k}" ry="${4.5 * k}"/>`,
+    art: `<circle class="gd" r="3.2"/>`,
+    hq: `<text class="f-size" y="3" style="font-size:8px">CP</text>`,
+    ad: `<path class="gl" d="M-7 5 Q0 -9 7 5"/>`,
+    uas: `<path class="gl" d="M-8 3 L0 -4 L8 3 M0 -4 L0 5"/>`,
+    ship: `<path class="gl" d="M-9 1 L9 1 L6 6 L-6 6Z M-3 1 L-3 -5 L3 -5 L3 1"/>`,
+    usv: `<path class="gl" d="M-9 4 q4.5 -5 9 0 q4.5 5 9 0 M-5 -1 L5 -1 L3 -5 L-3 -5Z"/>`,
+    aav: `<ellipse class="gl" rx="9" ry="4.5"/><path class="gl" d="M-9 7 q4.5 -3 9 0 q4.5 3 9 0"/>`,
+    cd: `<circle class="gd" r="2.6"/><path class="gl" d="M-8 6 L8 6"/>`,
+    ugv: `<path class="gl" d="M-8 -3 H8 V3 H-8Z"/><circle class="gd" cx="-5" cy="6" r="1.6"/><circle class="gd" cx="5" cy="6" r="1.6"/>`,
+    op: `<path class="gl" d="M0 -6 L6 5 L-6 5Z"/>`,
+  }[u.t] || "";
+  return `<g class="${blue ? "f-blue" : "f-red"}" transform="translate(${u.x} ${u.y}) scale(${scale})">${frame}${g}${u.s ? `<text class="f-size" y="${blue ? -12 : -15}">${u.s}</text>` : ""}</g>`;
+}
+function forcesSVG(field) {
+  const F = FORCES[field]; if (!F) return "";
+  const arrow = (a, cls, head) => { const [x1, y1, x2, y2] = a, ang = Math.atan2(y2 - y1, x2 - x1), h = 9; const p1 = [x2 - h * Math.cos(ang - 0.45), y2 - h * Math.sin(ang - 0.45)], p2 = [x2 - h * Math.cos(ang + 0.45), y2 - h * Math.sin(ang + 0.45)]; return `<path class="${cls}" d="M${x1} ${y1} L${x2} ${y2}"/><path class="${head}" d="M${x2} ${y2} L${p1[0].toFixed(1)} ${p1[1].toFixed(1)} L${p2[0].toFixed(1)} ${p2[1].toFixed(1)}Z"/>`; };
+  const lab = (u, side) => `<text class="f-lab" x="${u.x}" y="${u.y + (side === "blue" ? 20 : 24)}">${esc(u.lab)}</text>`;
+  return `<g class="forces">${F.assault.map(a => arrow(a, "m-assault", "m-arrowhead")).join("")}${F.counter.map(a => arrow(a, "m-red-axis", "m-red-head")).join("")}
+    ${F.red.map(u => unitSym(u, "red") + lab(u, "red")).join("")}${F.blue.map(u => unitSym(u, "blue") + lab(u, "blue")).join("")}</g>`;
+}
+
+/* 작전 형태별 기본 단계 (교범 기반 규칙안) */
+const OPS = {
+  amph: {
+    name: "상륙작전", field: "A", site: "상륙훈련장", goal: "해안 교두보 확보", unit: "대대급", enemy: "사단급", threat: "6", days: 3,
+    phases: [
+      { name: "준비", tag: "prep", loc: "A1", lvc: ["C", "V"], content: u => `${u} 지휘부가 상륙 방책 2~3개를 모의 워게임으로 비교하고, 디지털 트윈 해안에서 상륙 해안과 장애물 배치안을 검토한다.`, lvcReason: "실병력을 움직이기 전에 방책을 여러 번 반복해 비교해야 하므로 모의(C)가 효율적이다. 해안 지형 숙지는 가상(V)으로 보완한다.", tech: [["wargame", "방책별 소요 시간과 예상 손실을 여러 번 반복 비교"], ["twin", "상륙 해안 지형과 장애물 배치안을 동기화해 비교"]] },
+      { name: "해상 이동·접근", tag: "recon", loc: "A2", lvc: ["C", "L"], content: u => `${u} 상륙 제대가 상륙함에서 KAAV 상륙돌격장갑차로 전환해 해상 접근 항로로 이동한다. 접근로 위협은 모의로 부여하고 선두 제대만 실기동한다.`, lvcReason: "해상 이동 전 과정을 실기동하면 비용과 안전 부담이 크다. 위협 상황은 모의(C)로 넣고 선두 제대의 기동만 실기동(L)한다.", tech: [["usv", "해상 접근로 사전 정찰과 기만 기동"]] },
+      { name: "해안 장애물 개척", tag: "obstacle", loc: "A3", lvc: ["L", "V"], content: u => `공병과 선두 제대가 해안 장애물 지대를 개척한다. 장애물 위치는 정찰 드론 영상으로 미리 식별한다.`, lvcReason: "장애물 개척은 실제 장비와 절차 숙달이 핵심이라 실기동(L)한다. 드론 영상 판독은 가상(V)으로 사전 숙달한다.", tech: [["drone", "장애물 위치·종류 사전 식별"], ["ugv", "위험 구역 장애물 개척을 로봇이 대행"]] },
+      { name: "돌격 상륙", tag: "contact", loc: "A4", lvc: ["L"], content: u => `${u} 주력이 KAAV 1·2파로 돌격 해안에 상륙해 해안방어 진지를 돌파하고 해안선 거점을 탈취한다. 대항군은 AI 대항군 로봇으로 운용한다.`, lvcReason: "상륙 돌격의 기동과 제대 간 협조는 실제 지형에서만 검증할 수 있어 실기동(L)한다.", tech: [["redbot", "예측하기 어려운 지능형 대항군 역할"]] },
+      { name: "교두보 확보", tag: "logistics", loc: "A5", lvc: ["L", "C"], content: u => `교두보 목표 고지를 확보하고 방어로 전환한다. 탄약·식수 보급은 무인 보급으로 실시한다.`, lvcReason: "방어 편성은 실기동(L)으로 하고, 적 역습 강도 변화는 모의(C)로 여러 경우를 부여한다.", tech: [["ugv", "전방 거점까지 탄약·식수 보급"], ["logibot", "해안 하역지와 교두보 사이 물자 이송"], ["cuas", "교두보로 날아오는 적 정찰·자폭 드론 대응"]] },
+      { name: "내륙 진출", tag: "exploit", loc: "A6", lvc: ["V", "L"], content: u => `배후 시가지로 진출하며 시가지 진입 절차를 수행한다. 시가지 내부 전투는 가상훈련으로 대체한다.`, lvcReason: "실제 시가지 훈련장을 확보하기 어려워 내부 전투는 가상(V)으로 하고, 외곽 진출로 기동만 실기동(L)한다.", tech: [["arvr", "시가지 진입 절차 사전 숙달"], ["drone", "진출로 전방 정찰"]] },
+    ],
+  },
+  island: {
+    name: "전략도서방어작전", field: "B", site: "해상/수중침투 훈련장", goal: "도서 거점 방어와 회복",
+    phases: [
+      { name: "경계·감시", tag: "recon", loc: "B1", lvc: ["V", "C"], content: u => `${u}가 섬 정상 관측소와 해안 감시 초소를 운용한다.`, lvcReason: "장시간 감시 근무는 디지털 트윈 환경(V)에서 교대 절차를 숙달하고, 감시 공백은 모의(C)로 분석한다.", tech: [["twin", "섬 지형과 감시 사각지대 동기화"], ["drone", "감시 사각 해역 보완 정찰"]] },
+      { name: "적 접근 탐지", tag: "detect", loc: "B2", lvc: ["C"], content: u => `원해 접근로에서 대항군 접근을 탐지·보고하고 ${u} 대응 방책을 결정한다.`, lvcReason: "다양한 접근 경로와 시간대를 반복해서 부여해야 하므로 모의(C)가 적합하다.", tech: [["wargame", "접근 경로별 대응 방책 반복 비교"], ["usv", "대항군 접근 세력 모사"]] },
+      { name: "해안 방어", tag: "contact", loc: "B3", lvc: ["L"], content: u => `남측 해안 진지에서 상륙하는 대항군을 저지한다.`, lvcReason: "진지 점령과 화력 운용은 실제 지형에서 검증해야 하므로 실기동(L)한다.", tech: [["redbot", "상륙 대항군 역할"]] },
+      { name: "역습", tag: "exploit", loc: "B4", lvc: ["L", "V"], content: u => `역습 부대가 집결지에서 출발해 상실한 해안 거점을 회복한다.`, lvcReason: "역습 기동은 실기동(L), 역습 개시 시점 판단은 가상(V)으로 반복 훈련한다.", tech: [["exo", "바위 지형 고강도 기동 근력 보조"], ["drone", "역습로 정찰"]] },
+      { name: "도서 회복·유지", tag: "logistics", loc: "B5", lvc: ["C", "L"], content: u => `섬 전역을 회복하고 보급항을 통한 지속 지원 체계를 유지한다.`, lvcReason: "장기 유지 단계의 보급 소요는 모의(C)로 계산하고, 보급항 하역만 실기동(L)한다.", tech: [["logibot", "보급항과 진지 사이 물자 이송"], ["wargame", "장기 유지 소요 분석"]] },
+    ],
+  },
+  rapid: {
+    name: "신속대응부대작전", field: "C", site: "시가지/장애물 교장", goal: "시가지 위협 신속 제압",
+    phases: [
+      { name: "상황 접수", tag: "prep", loc: "C1", lvc: ["C"], content: u => `상황실에서 상황을 접수하고 ${u} 출동 규모와 경로를 판단한다.`, lvcReason: "상황 부여와 판단 훈련은 모의(C)로 여러 상황을 빠르게 반복한다.", tech: [["wargame", "상황별 출동 방책 비교"]] },
+      { name: "긴급 출동 준비", tag: "ready", loc: "C2", lvc: ["V", "L"], content: u => `${u}가 출동 준비지역에서 장비를 결속하고 투입 지역을 사전 숙달한다.`, lvcReason: "투입 지역 숙달은 가상(V), 장비 결속은 실기동(L)으로 한다.", tech: [["arvr", "투입 지역 사전 숙달"], ["exo", "중장비 결속·운반 근력 보조"]] },
+      { name: "전개", tag: "logistics", loc: "C3", lvc: ["L"], content: u => `전개 축선을 따라 차량으로 기동해 현장 인근까지 전개한다.`, lvcReason: "도로 기동과 교통 통제는 실제로 해봐야 하므로 실기동(L)한다.", tech: [["logibot", "후속 물자 자율 이송"], ["drone", "전개 축선 위험 구간 사전 정찰"]] },
+      { name: "현장 투입", tag: "contact", loc: "C4", lvc: ["L", "V"], content: u => `시가지 현장에 투입해 위협을 제압한다.`, lvcReason: "건물 진입과 제압은 실기동(L)으로 하고, 위험도가 높은 상황은 가상(V)으로 먼저 숙달한다.", tech: [["drone", "건물 내부·옥상 정찰"], ["redbot", "시가지 대항군 역할"]] },
+      { name: "상황 안정화", tag: "exploit", loc: "C5", lvc: ["L", "C"], content: u => `외곽 차단선을 설치하고 현장을 안정화한다.`, lvcReason: "차단선 설치는 실기동(L), 2차 위협 발생은 모의(C)로 부여한다.", tech: [["ugv", "차단선 주변 위험물 확인"]] },
+      { name: "복귀", tag: "review", loc: "C6", lvc: ["C"], content: u => `복귀 후 훈련 결과를 모의 환경에서 재현해 사후 검토(AAR)를 한다.`, lvcReason: "훈련 기록을 재현해 여러 대안을 비교하는 데는 모의(C)가 적합하다.", tech: [["wargame", "훈련 결과 재현과 사후 검토"]] },
+    ],
+  },
+  // 시나리오 2 (초안 v0.1, 2026-11-03): 7단계 공격 절차. 조건이 갖춰지지 않으면 다음 단계로 넘어가지 않는다.
+  mumt: {
+    name: "중대급 유무인복합(MUM-T) 공격", field: "D", site: "시가지/장애물 교장", goal: "해안 교두보 확장 및 시가지 거점 확보",
+    unit: "중대급", enemy: "소대급", threat: "4", days: 1, period: "주간 6시간 + 야간 공고화",
+    phases: [
+      { name: "계획·준비", tag: "prep", loc: "D2", when: "H-24 ~ H-2", lvc: ["C", "V"], content: u => `해병 ${u}(+) 중대장이 AI 전투참모가 제시한 방책 3개 중 하나를 결심한다(HITL). 디지털 트윈에서 Rock-Drill로 기상별 드론 운용 가부와 화력 소요를 확인하고, 아군 재밍과 드론 링크가 서로 간섭하지 않도록 주파수·시간 분할을 소대 수준까지 협조한다.`, lvcReason: "방책 비교와 Rock-Drill은 실병력 없이 여러 번 반복해야 하므로 모의(C)로 하고, 지형·기상별 판정은 디지털 트윈 가상(V)으로 확인한다.", tech: [["aistaff", "방책 3개와 화력 소요 제시, 결심은 중대장"], ["twin", "기상별 드론 운용 가부 판정과 Rock-Drill"], ["wargame", "방책별 예상 손실 반복 비교"]] },
+      { name: "정찰", tag: "recon", loc: "D3", when: "H-2 ~ H", lvc: ["L", "C"], content: u => `대드론·EW조가 적 정찰드론을 먼저 탐지·차단해 적의 눈부터 줄인다. 정찰 UAV 2대를 교대 운용하고 표적 정보를 공통작전상황도(COP)에 SALUTE 형식으로 자동 등록한다. AI는 표적 후보만 제시하고 표적 확정은 사람이 한다. 진행 조건: 적 주요 진지와 측방 관측소 위치 확인.`, lvcReason: "드론 교대 운용과 대드론 차단은 실제 장비 숙달이 필요해 실기동(L)하고, 측방 산악 관측소 등 적 정찰 세력 일부는 모의(C)로 넣는다.", tech: [["cuas", "적 정찰드론 선제 탐지·차단"], ["drone", "정찰 UAV 2대 교대 운용, COP 자동 등록"], ["aistaff", "표적 후보 제시 (확정은 사람)"]] },
+      { name: "고립", tag: "isolate", loc: "D8", when: "H ~ H+1", lvc: ["L", "C"], content: u => `FPV팀을 접촉선 후방 근거리에 두고 적 증원로·보급로를 차단한다(FPV 격파가 전방진지 기준 -3~3km에 집중된다는 교훈 적용). 야간 폭격형 UAV로 증원로에 훈련용 모의 살포형 장애물을 놓는다. 진행 조건: 증원로 차단 확인.`, lvcReason: "FPV 조종과 운용 위치 선정은 실기동(L)하고, 적 증원 차량과 차단 효과는 모의(C)로 판정한다.", tech: [["fpv", "증원로·보급로 차단 타격"], ["drone", "야간 폭격형 UAV로 모의 살포형 장애물 설치"]] },
+      { name: "약화", tag: "weaken", loc: "D5", when: "H+1 ~ H+2", lvc: ["C", "L"], content: u => `화기소대 박격포와 가상 대대 포병(Constructive)으로 적 진지를 약화한다. 화기탑재 UGV는 측방 오프셋으로 침투 배치하되, 돌격 개시 전에는 사격하지 않는다. 진행 조건: 적 방어진지 약화 판정.`, lvcReason: "대대 포병은 실제로 쓸 수 없어 모의(C)로 넣고, 박격포 사격 절차와 UGV 침투 배치는 실기동(L)한다.", tech: [["ugv", "화기탑재 UGV 측방 침투 배치 (돌격 전 사격 금지)"], ["wargame", "가상 대대 포병 화력 효과 판정"]] },
+      { name: "고착", tag: "fix", loc: "D4", when: "H+2", lvc: ["L", "V"], content: u => `FPV로 적 기관총 진지를 고착한다. FPV 성공률은 100%로 가정하지 않고 70~80%로 설정한다(우수 조종사 기준). 재밍 구간에서는 광섬유 FPV로 바꾸고, 케이블이 조종사 위치를 드러내므로 발사 후 바로 위치를 옮긴다. 진행 조건: 적 기관총 진지 사격 억제.`, lvcReason: "고착 타격은 실기동(L)하고, 조종 숙달과 재밍 상황 전환 절차는 가상(V) 시뮬레이터로 먼저 반복한다.", tech: [["fpv", "적 기관총 진지 고착 (성공률 70~80% 설정)"], ["fofpv", "재밍 구간 대체 타격, 발사 후 즉시 위치 이동"]] },
+      { name: "제압", tag: "suppress", loc: "D6", when: "H+2 ~ H+3", lvc: ["L"], content: u => `화기탑재 UGV가 측방 제압을 시작하고 박격포가 연막을 친다. 방호차량(상륙돌격장갑차 2대)이 보병을 엄호하며 시가지 외곽 거점에 접근한다. 진행 조건: 외곽 거점 접근로 확보.`, lvcReason: "제대 간 화력·기동 협조는 실제 지형에서만 검증할 수 있어 실기동(L)한다.", tech: [["ugv", "측방 제압 사격"], ["redbot", "교관 대항군과 AI 대항군 로봇의 방어 반응"]] },
+      { name: "근접섬멸", tag: "contact", loc: "D7", when: "H+3 ~ H+4", lvc: ["L", "V"], content: u => `건물·지하 진입은 소형 드론과 UGV가 먼저 하고, 소탕은 사람이 한다. 시가지·지하에서 통신·GNSS가 끊긴다고 보고 신호를 미리 협조한다. UWB/LoRa 기반 아군 위치 공유로 오사를 막는다.`, lvcReason: "근접 소탕은 실기동(L)하고, 지하 진입처럼 위험도가 높은 상황은 가상(V)으로 먼저 숙달한다.", tech: [["drone", "건물·지하 선행 진입 정찰"], ["iff", "통신 두절 상황의 아군 위치 공유, 오사 방지"], ["redbot", "건물 내 AI 대항군 역할"]] },
+      { name: "공고화", tag: "logistics", loc: "D6", when: "H+4 ~ 야간", lvc: ["L", "C"], content: u => `보급형 UGV로 탄약·물·공고화 자재를 나르고 후송형 UGV로 부상자를 후송한다. UGV는 늘 모자라므로 후송 우선순위는 중대장이 정한다. 대드론조는 탐지(전파·음향) → 차단 → 은폐·그물·분산 순으로 다층 방호하고, 이동로가 가장 위험하므로 보급 이동 시간을 분산한다.`, lvcReason: "보급·후송 절차는 실기동(L)하고, 야간 증원과 적 FPV 대량 공격 강도는 모의(C)로 여러 경우를 넣는다.", tech: [["ugv", "탄약·물 보급과 부상자 후송"], ["cuas", "다층 방호: 탐지 → 차단 → 은폐·분산"]] },
+    ],
+  },
+};
+
+/* ───────────── 유틸 ───────────── */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const now = () => new Date().toISOString();
+const clone = v => JSON.parse(JSON.stringify(v));
+const pad = n => String(n).padStart(2, "0");
+const fmt = iso => { if (!iso) return ""; const d = new Date(iso); return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const str = v => (typeof v === "string" ? v.trim() : "");
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+const ssGet = k => { try { return sessionStorage.getItem(k); } catch { return null; } };
+const ssSet = (k, v) => { try { sessionStorage.setItem(k, v); } catch {} };
+const stClass = s => "st-" + String(s).replace(/\s/g, "");
+let toastTimer;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 3600); }
+
+/* ───────────── 저장소: 공유 DB 또는 이 브라우저 ───────────── */
+const Local = {
+  data: (() => { try { return JSON.parse(localStorage.getItem("lvc-store")) || null; } catch { return null; } })() || { scenarios: {}, comments: {}, history: {}, config: {}, aar: {} },
+  subs: {},
+  persist() { try { localStorage.setItem("lvc-store", JSON.stringify(this.data)); } catch {} },
+  list(c) { return Object.entries(this.data[c] || {}).map(([id, v]) => ({ ...v, id })); },
+  emit(c) { (this.subs[c] || []).forEach(cb => cb(this.list(c))); },
+  subscribe(c, cb) { (this.subs[c] = this.subs[c] || []).push(cb); cb(this.list(c)); },
+  async set(c, id, v) { (this.data[c] = this.data[c] || {})[id] = clone(v); this.persist(); this.emit(c); },
+  async update(c, id, p) { if (!this.data[c]?.[id]) throw { code: "invalid_argument" }; Object.assign(this.data[c][id], clone(p)); this.persist(); this.emit(c); },
+  async del(c, id) { delete this.data[c]?.[id]; this.persist(); this.emit(c); },
+};
+let DB = null;
+const Remote = {
+  subscribe(c, cb) {
+    const timer = setTimeout(() => toast("공유 저장소 응답이 늦습니다. 목록이 최신이 아닐 수 있습니다."), 10000);
+    DB.collection(c).onSnapshot(s => { if (!s.metadata.fromCache) clearTimeout(timer); cb(s.docs.map(d => ({ ...d.data(), id: d.id }))); },
+      e => { clearTimeout(timer); toast("공유 저장소 연결이 끊겼습니다. 새로고침해 주세요."); console.warn(e); });
+  },
+  set: (c, id, v) => DB.collection(c).doc(id).set(clone(v)),
+  update: (c, id, p) => DB.collection(c).doc(id).update(clone(p)),
+  del: (c, id) => DB.collection(c).doc(id).delete(),
+};
+let Store = Local;
+async function write(fn) {
+  try { await fn(); return true; }
+  catch (e) {
+    console.warn(e);
+    if (e?.code === "invalid_argument" && Store === Remote) { S.readOnly = true; showBanner(); toast("저장 권한이 없습니다. 보기 전용으로 전환합니다."); }
+    else if (e?.code === "quota_exceeded") toast("저장 공간이 가득 찼습니다. 오래된 시나리오를 정리해 주세요.");
+    else toast("저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    return false;
+  }
+}
+
+/* ───────────── 상태 ───────────── */
+const S = {
+  tab: "make", currentId: null,
+  scenarios: [], comments: [], history: [], config: [], aar: [],
+  loaded: false, mode: "connecting", readOnly: false,
+  author: AUTHORS.includes(lsGet("lvc-author")) ? lsGet("lvc-author") : AUTHORS[0],
+  reviewer: REVIEWERS.includes(ssGet("lvc-reviewer")) ? ssGet("lvc-reviewer") : REVIEWERS[0],
+  reviewOk: ssGet("lvc-rv") === "1",
+  form: { op: "amph", unit: "대대급", enemy: "사단급", goal: "해안 교두보 확보", days: 3, site: "상륙훈련장", field: "A", threat: "6" },
+  generating: false, genChars: 0, genCtl: null,
+  activePhase: null, drafts: {}, proposals: {}, editing: null, rejecting: null, histSel: null,
+  catEdit: null, catDel: null, catReset: false, pdfBusy: false, dirty: false, gateErr: "",
+  aarStep: 0, aarPlaying: false, aarTimer: null, aarDrafts: {}, aarAi: {},
+};
+let sample = null, downloads = null;
+
+const catalog = () => { const d = S.config.find(c => c.id === "catalog"); return Array.isArray(d?.items) && d.items.length ? d.items : CATALOG0; };
+const catById = id => catalog().find(c => c.id === id);
+const cur = () => S.scenarios.find(s => s.id === S.currentId) || null;
+const commentsOf = id => S.comments.filter(c => c.scenarioId === id).sort((a, b) => (a.at > b.at ? 1 : -1));
+const historyOf = id => S.history.filter(h => h.scenarioId === id).sort((a, b) => (a.at < b.at ? 1 : -1));
+const queue = () => S.scenarios.filter(s => s.status === "검토 요청" || s.status === "재검토");
+const pointFor = (F, key, i) => F.points.find(p => p.key === key) || F.points[i % F.points.length];
+const threatById = id => THREATS.find(t => t.id === String(id)) || THREATS[0];
+
+/* ───────────── 규칙 기반 초안 ───────────── */
+function addTech(p, id, reason) {
+  if (!p || p.tech.some(t => t.id === id)) return;
+  if (p.tech.length >= 3) p.tech.pop();
+  p.tech.push({ id, name: catById(id)?.name || id, reason });
+}
+function applyThreat(ph, threat) {
+  const by = (...tags) => tags.map(t => ph.find(p => p.tag === t)).find(Boolean);
+  const t = String(threat);
+  if (t === "1") {
+    const c = by("contact"); if (c) { c.threatNote = "대항군이 무인 선두파(무인수상정·드론)로 먼저 접근한다. 진지를 노출하지 않고 식별·대응하는지 평가한다."; addTech(c, "redbot", "무인 선두파 역할을 맡는 지능형 대항군"); }
+    const d = by("detect", "recon"); if (d) { addTech(d, "usv", "무인 선두파 접근을 모의 환경에서 반복 재현"); if (!d.lvc.includes("C")) d.lvc.push("C"); }
+  } else if (t === "2") {
+    const o = by("obstacle", "contact"); if (o) { o.threatNote = "대항군 로봇이 장애물을 개척·돌파한다. 장애물과 감시 센서 연계로 돌파를 조기에 탐지하는지 확인한다."; addTech(o, "ugv", "장애물 돌파 로봇(대항군) 역할 모사"); addTech(o, "drone", "장애물 지대 상공 감시와 센서 연계"); }
+  } else if (t === "3") {
+    const l = by("logistics", "exploit"); if (l) { l.threatNote = "후방 지역에 유무인 침투조가 나타난다. 후방 경계와 증원로 보호 절차를 평가한다."; addTech(l, "drone", "증원로 상공 감시"); addTech(l, "redbot", "후방 침투조 역할"); }
+  } else if (t === "4") {
+    ph.forEach(p => { if (p.tech.some(x => ["drone", "usv", "ugv", "logibot"].includes(x.id))) p.threatNote = "통신·통제 교란 가정: 무인체계 통제 링크가 끊길 때 자율 복귀·수동 전환 절차를 포함한다."; });
+    addTech(by("prep", "detect", "recon"), "wargame", "교란 상황별 무인체계 운용 방책 비교");
+  } else if (t === "5") {
+    const r = by("recon", "detect"); if (r) { r.threatNote = "아군 MUM-T 적용: 유인 정찰조와 드론의 임무 분담을 평가한다."; addTech(r, "drone", "아군 정찰 무인화(MUM-T)"); }
+    const l = by("logistics"); if (l) { l.threatNote = "아군 MUM-T 적용: 보급을 무인체계로 넘겼을 때 유인 제대의 부담 변화를 평가한다."; addTech(l, "logibot", "아군 보급 무인화(MUM-T)"); }
+  } else if (t === "6") {
+    ["contact", "logistics"].forEach(tag => { const p = by(tag); if (p) { p.threatNote = "적 정찰·자폭 드론이 출현한다. 탐지→식별→판단→무력화 절차와 위장·분산 같은 수동 방호를 평가한다."; addTech(p, "cuas", "적 정찰·자폭 드론 탐지와 무력화"); } });
+    const pr = by("prep", "detect", "recon"); if (pr) addTech(pr, "wargame", "적 드론 규모·방향별 대드론 배치안 비교");
+  }
+}
+function assignDays(ph, days) {
+  const d = Math.max(1, Math.min(30, Number(days) || 1)), n = ph.length;
+  ph.forEach((p, i) => { const s = Math.floor(i * d / n) + 1; const e = Math.max(s, Math.floor((i + 1) * d / n)); p.when = s === e ? `${s}일차` : `${s}~${e}일차`; });
+}
+function buildBaseline(c) {
+  const op = OPS[c.op], F = FIELDS[c.field];
+  const ph = op.phases.map((t, i) => ({
+    name: t.name, tag: t.tag, content: t.content(c.unit), lvc: [...t.lvc], lvcReason: t.lvcReason,
+    tech: t.tech.filter(([id]) => catById(id)).map(([id, reason]) => ({ id, name: catById(id).name, reason })),
+    loc: c.field === op.field ? t.loc : F.points[i % F.points.length].key, threatNote: "",
+  }));
+  applyThreat(ph, c.threat);
+  const g = str(c.goal); const contact = ph.find(p => p.tag === "contact");
+  if (g && contact) contact.content += ` 훈련 목표 "${g}" 달성 여부를 이 단계에서 평가한다.`;
+  // 전력비 열세(예: 대대 vs 사단): 기만·선행 정찰로 국지적 우세를 만드는 방책을 단계에 넣는다
+  const gap = sizeRank(c.enemy) - sizeRank(c.unit);
+  if (c.enemy && c.enemy !== "없음" && gap >= 2) {
+    const first = ph[0];
+    first.content += ` 아군 ${c.unit}이 가상 대항군 ${c.enemy}에 맞서는 열세 상황이므로, 상륙 지점 기만과 무인체계 선행 정찰로 국지적 우세를 만드는 방책을 비교한다.`;
+    if (contact) contact.content += ` 대항군 예비대가 역습하기 전에 해안 거점을 확보하는 시간 통제가 핵심이다.`;
+  }
+  assignDays(ph, c.days);
+  op.phases.forEach((t, i) => { if (t.when) ph[i].when = t.when; });
+  return ph;
+}
+function normalizePhase(a, b, field) {
+  a = a && typeof a === "object" ? a : {};
+  const keys = FIELDS[field].points.map(p => p.key);
+  const lvc = Array.isArray(a.lvc) ? [...new Set(a.lvc.map(x => String(x).trim().toUpperCase().charAt(0)).filter(x => x && "LVC".includes(x)))] : [];
+  const tech = Array.isArray(a.tech) ? a.tech.map(t => ({ id: String(t?.id || ""), reason: str(t?.reason) })).filter(t => catById(t.id)).slice(0, 3).map(t => ({ ...t, name: catById(t.id).name })) : null;
+  return {
+    ...b, name: str(a.name) || b.name, content: str(a.content) || b.content, lvc: lvc.length ? lvc : b.lvc,
+    lvcReason: str(a.lvcReason) || b.lvcReason, tech: tech ?? b.tech, loc: keys.includes(a.loc) ? a.loc : b.loc,
+    threatNote: typeof a.threatNote === "string" ? a.threatNote.trim() : b.threatNote,
+  };
+}
+const catalogText = () => catalog().map(c => `${c.id} | ${c.name} | ${c.use} | ${c.modes.join(",")}`).join("\n");
+const pointsText = f => FIELDS[f].points.map(p => `${p.key} | ${p.name}`).join("\n");
+const condText = c => `작전 형태: ${OPS[c.op].name}\n아군: 해병대 ${c.unit}\n대항군: ${c.enemy && c.enemy !== "없음" ? `가상 적색군 ${c.enemy} (북한군 편제 가정, 실제 부대·위치 아님)` : "지정 안 함"}\n` + condRest(c);
+const condRest = c => `훈련 목표: ${c.goal || "(미입력)"}\n기간: ${OPS[c.op]?.period || c.days + "일"}\n훈련장 유형: ${c.site}\n가상 훈련장: ${FIELDS[c.field].name} (${FIELDS[c.field].desc})\n대항군 위협 패턴: ${threatById(c.threat).name}${threatById(c.threat).goal ? " — 훈련 목표: " + threatById(c.threat).goal : ""}`;
+const phaseJSON = p => JSON.stringify({ name: p.name, content: p.content, lvc: p.lvc, lvcReason: p.lvcReason, tech: p.tech.map(t => ({ id: t.id, reason: t.reason })), loc: p.loc, threatNote: p.threatNote || "" });
+
+/* ───────────── 초안 생성 ───────────── */
+async function generate() {
+  if (S.readOnly) return toast("보기 전용 상태에서는 만들 수 없습니다.");
+  const c = { ...S.form, goal: str(S.form.goal), days: Math.max(1, Math.min(30, Number(S.form.days) || 1)) };
+  const base = buildBaseline(c);
+  let phases = base, source = "rule";
+  S.generating = true; S.genChars = 0; renderNow();
+  if (sample) {
+    const ctl = new AbortController(); S.genCtl = ctl;
+    const prompt = `너는 군 교육훈련 시나리오 설계를 돕는 도우미다. 모든 부대·훈련장·작전 정보는 가상이다.
+아래 조건과 교범 기반 기본안을 바탕으로, 훈련 목표·부대 규모·위협 패턴에 맞게 각 단계를 구체화하라.
+
+규칙
+- 단계 수와 순서는 기본안과 같게 유지한다. 단계명은 다듬어도 된다.
+- lvc는 "L"(실기동), "V"(가상), "C"(모의) 중 1~2개, 주 방식을 먼저 쓴다. lvcReason에 왜 그 방식인지 1~2문장.
+- tech는 아래 카탈로그 id만 쓴다. 단계당 0~3개. reason은 그 단계에 왜 넣는지 한 문장.
+- loc은 지도 지점 key만 쓴다.
+- content는 2~3문장. 부대 규모와 훈련 목표를 반영한다.
+- 위협 패턴이 있으면 관련 단계에만 threatNote 한 문장, 없으면 빈 문자열.
+- 실제 부대명·지명·인명·좌표는 쓰지 않는다. 대항군은 "가상 적색군"으로만 부른다.
+- 아군이 대항군보다 열세이면 기만·선행 정찰·대드론 방호로 국지적 우세를 만드는 내용을 넣는다.
+
+[조건]
+${condText(c)}
+
+[신기술 카탈로그: id | 이름 | 주 활용 | 영역]
+${catalogText()}
+
+[지도 지점: key | 이름]
+${pointsText(c.field)}
+
+[기본안]
+${JSON.stringify({ phases: base.map(p => JSON.parse(phaseJSON(p))) })}
+
+JSON만 답하라. 형식: {"phases":[{"name":"","content":"","lvc":["L"],"lvcReason":"","tech":[{"id":"","reason":""}],"loc":"","threatNote":""}]}`;
+    try {
+      const out = await sample.json(prompt, { modelTier: "default", effort: "low", signal: ctl.signal, onText: ({ text }) => { S.genChars = text.length; const el = $("#genChars"); if (el) el.textContent = text.length.toLocaleString(); } });
+      if (Array.isArray(out?.phases) && out.phases.length) { phases = base.map((b, i) => normalizePhase(out.phases[i], b, c.field)); source = "ai"; }
+    } catch (e) {
+      if (e?.code !== "cancelled") toast(e?.code === "not_granted" ? "AI 사용이 허용되지 않아 교범 기반 규칙으로 만들었습니다." : "AI 응답을 받지 못해 교범 기반 규칙으로 만들었습니다.");
+    }
+    S.genCtl = null;
+  }
+  const op = OPS[c.op];
+  const id = uid("s"), t = now();
+  const doc = {
+    title: `${op.name} · ${c.goal || op.goal}`, author: S.author, op: c.op, unit: c.unit, enemy: c.enemy || "없음", goal: c.goal, days: c.days, site: c.site,
+    field: c.field, threat: String(c.threat), status: "작성 중", version: 1, phases, source, createdAt: t, updatedAt: t,
+  };
+  const ok = await write(async () => {
+    await Store.set("scenarios", id, doc);
+    await Store.set("history", uid("h"), { scenarioId: id, version: 1, kind: "create", phaseIdx: -1, phaseName: "", by: S.author, at: t, note: source === "ai" ? "AI 초안 생성" : "교범 기반 규칙으로 초안 생성", commentId: "" });
+  });
+  S.generating = false;
+  if (ok) { S.currentId = id; S.activePhase = null; }
+  renderNow();
+}
+
+/* ───────────── 상태 흐름 · 의견 · 수정 ───────────── */
+async function setStatus(sc, to, note = "", by = S.author) {
+  const from = sc.status;
+  return write(async () => {
+    await Store.update("scenarios", sc.id, { status: to, updatedAt: now() });
+    await Store.set("history", uid("h"), { scenarioId: sc.id, version: sc.version, kind: "status", phaseIdx: -1, phaseName: "", from, to, by, at: now(), note, commentId: "" });
+  });
+}
+async function addComment(sc, phaseIdx, text, extra = {}) {
+  return write(() => Store.set("comments", uid("c"), { scenarioId: sc.id, phaseIdx, text, reviewer: S.reviewer, at: now(), version: sc.version, state: "open", reason: "", kind: "comment", ...extra }));
+}
+async function applyPhaseChange(sc, i, np, meta) {
+  const before = sc.phases[i];
+  const phases = clone(sc.phases);
+  phases[i] = { ...np, tag: before.tag, when: before.when };
+  const v = (sc.version || 1) + 1;
+  return write(async () => {
+    await Store.update("scenarios", sc.id, { phases, version: v, updatedAt: now() });
+    await Store.set("history", uid("h"), { scenarioId: sc.id, version: v, kind: meta.kind, phaseIdx: i, phaseName: phases[i].name, before: clone(before), after: clone(phases[i]), commentId: meta.commentId || "", by: S.author, at: now(), note: meta.note || "" });
+    if (meta.commentId) await Store.update("comments", meta.commentId, { state: "applied", appliedVersion: v, handledBy: S.author, handledAt: now() });
+  });
+}
+function ruleRevision(sc, p, text) {
+  const np = clone(p);
+  const hitsIn = s => catalog().filter(c => [c.name, ...(c.alias || [])].some(a => a && s.includes(a)));
+  const notes = [];
+  // "X 대신 Y" → X 제외, Y 추가. "Y가 더 적합" → 언급 안 된 첫 기술을 Y로 교체.
+  const parts = text.split("대신");
+  let add = hitsIn(text), remove = [];
+  if (parts.length > 1) { remove = hitsIn(parts[0]); add = hitsIn(parts.slice(1).join(" ")); }
+  else if (/더 적합|교체|바꿔|바꾸/.test(text) && add.length) remove = np.tech.filter(t => !add.some(a => a.id === t.id)).slice(0, 1).map(t => catById(t.id) || { id: t.id, name: t.name });
+  remove.forEach(r => { const k = np.tech.findIndex(t => t.id === r.id); if (k >= 0) { np.tech.splice(k, 1); notes.push(`${r.name} 제외`); } });
+  add.forEach(h => {
+    if (np.tech.some(t => t.id === h.id)) return;
+    if (np.tech.length >= 3) np.tech.pop();
+    np.tech.push({ id: h.id, name: h.name, reason: `검토 의견 반영: ${h.use}` }); notes.push(`${h.name} 추가`);
+  });
+  const modeHit = [["실기동", "L"], ["가상", "V"], ["모의", "C"]].find(([w]) => text.replace(/가상 훈련장/g, "").includes(w));
+  if (modeHit && np.lvc[0] !== modeHit[1]) { np.lvc = [modeHit[1], ...np.lvc.filter(m => m !== modeHit[1])].slice(0, 2); np.lvcReason = `검토 의견에 따라 ${MODES[modeHit[1]]}(${modeHit[1]})을 주 방식으로 바꾼다. ` + np.lvcReason; notes.push(`주 방식 ${modeHit[1]}`); }
+  return { phase: np, summary: notes.length ? notes.join(", ") : "의견에서 바꿀 기술·방식을 찾지 못했습니다. 직접 수정해 주세요.", source: "rule" };
+}
+async function proposeFor(sc, cm) {
+  const p = sc.phases[cm.phaseIdx]; if (!p) return;
+  S.proposals[cm.id] = { loading: true }; renderNow();
+  let res = null;
+  if (sample) {
+    const prompt = `너는 훈련 시나리오 수정 도우미다. 모든 정보는 가상이다. 검토 의견을 반영해 아래 한 단계만 수정하라. 바꿀 필요가 없는 필드는 그대로 둔다.
+
+[시나리오 조건]
+${condText(sc)}
+
+[현재 단계]
+${phaseJSON(p)}
+
+[검토 의견 — ${cm.reviewer}]
+"${cm.text}"
+
+[신기술 카탈로그: id | 이름 | 주 활용 | 영역]
+${catalogText()}
+
+[지도 지점: key | 이름]
+${pointsText(sc.field)}
+
+규칙: lvc는 "L","V","C" 중 1~2개(주 방식 먼저), tech는 카탈로그 id만 0~3개, loc은 지점 key만.
+JSON만 답하라. 형식: {"phase":{"name":"","content":"","lvc":["L"],"lvcReason":"","tech":[{"id":"","reason":""}],"loc":"","threatNote":""},"summary":"무엇을 왜 바꿨는지 한 문장"}`;
+    try {
+      const out = await sample.json(prompt, { modelTier: "default", effort: "low" });
+      if (out?.phase) res = { phase: normalizePhase(out.phase, p, sc.field), summary: str(out.summary) || "의견을 반영해 수정했습니다.", source: "ai" };
+    } catch (e) { if (e?.code !== "cancelled") toast("AI 수정안을 받지 못해 규칙 기반 수정안을 보여 드립니다."); }
+  }
+  S.proposals[cm.id] = res || ruleRevision(sc, p, cm.text);
+  renderNow();
+}
+
+/* ───────────── PDF ───────────── */
+async function saveFile(filename, blob) {
+  if (downloads) {
+    try { await downloads.save({ filename, data: blob }); toast("PDF를 저장했습니다."); }
+    catch (e) { if (e?.code !== "declined") toast("이 화면에서는 파일을 저장할 수 없습니다."); }
+  } else if (!window.claude) {
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  } else toast("이 화면에서는 파일 저장을 지원하지 않습니다.");
+}
+function reportHTML(sc) {
+  const cm = commentsOf(sc.id), hs = historyOf(sc.id).slice().reverse();
+  const approve = cm.filter(c => c.decision === "approve").pop();
+  const th = threatById(sc.threat);
+  return `<div class="rp">
+    <div class="rp-block"><div class="rp-cls">가상 데이터 · 훈련 시나리오 · ${esc(sc.status)}</div><h1>${esc(sc.title)}</h1>
+      <table><tr><th>버전</th><td>v${sc.version}</td><th>작성자</th><td>${esc(sc.author)}</td></tr>
+      <tr><th>작전 형태</th><td>${esc(OPS[sc.op]?.name)}</td><th>아군 / 대항군</th><td>해병대 ${esc(sc.unit)} / ${sc.enemy && sc.enemy !== "없음" ? "가상 적색군 " + esc(sc.enemy) : "-"}</td></tr>
+      <tr><th>훈련 목표</th><td>${esc(sc.goal)}</td><th>기간</th><td>${esc(OPS[sc.op]?.period || sc.days + "일")}</td></tr>
+      <tr><th>훈련장 유형</th><td>${esc(sc.site)}</td><th>가상 훈련장</th><td>${esc(FIELDS[sc.field].name)}</td></tr>
+      <tr><th>대항군 위협</th><td>${esc(th.name)}</td><th>승인</th><td>${approve ? esc(approve.reviewer) + " · " + fmt(approve.at) : "-"}</td></tr></table></div>
+    <div class="rp-block"><h2>단계별 위치</h2>${mapSVG(sc.field, sc.phases, null)}</div>
+    ${sc.phases.map((p, i) => `<div class="rp-block">${phaseCard(sc, p, i, "", true)}</div>`).join("")}
+    ${sc.op === "mumt" ? `<div class="rp-block"><h2>통제관 주입 이벤트</h2><table><tr><th>#</th><th>단계</th><th>이벤트</th><th>기대 행동</th><th>근거</th></tr>
+      ${MUMT_REF.injects.map(r => `<tr>${r.map(v => `<td>${esc(v)}</td>`).join("")}</tr>`).join("")}</table></div>
+    <div class="rp-block"><h2>HITL·교전규칙 원칙 · 평가지표</h2><table>${MUMT_REF.hitl.map(t => `<tr><th>HITL</th><td colspan="2">${esc(t)}</td></tr>`).join("")}
+      ${MUMT_REF.metrics.map(([k, t, c]) => `<tr><th>${k}</th><td>${esc(t)}</td><td>${esc(c)}</td></tr>`).join("")}</table></div>` : ""}
+    <div class="rp-block"><h2>검토 의견</h2><table><tr><th>대상</th><th>검토자</th><th>내용</th><th>처리</th></tr>
+      ${cm.map(c => `<tr><td>${c.phaseIdx >= 0 ? "PH-" + pad(c.phaseIdx + 1) : "전체"}</td><td>${esc(c.reviewer)}</td><td>${esc(c.text)}</td><td>${esc(cmtState(c).label)}${c.reason ? " — " + esc(c.reason) : ""}</td></tr>`).join("") || `<tr><td colspan="4">의견 없음</td></tr>`}</table></div>
+    <div class="rp-block"><h2>변경 이력</h2><table><tr><th>버전</th><th>내용</th><th>담당</th><th>시각</th></tr>
+      ${hs.map(h => `<tr><td>v${h.version}</td><td>${esc(histText(h))}</td><td>${esc(h.by)}</td><td>${fmt(h.at)}</td></tr>`).join("")}</table></div>
+  </div>`;
+}
+async function exportPdf(sc) {
+  if (!window.html2canvas || !window.jspdf) return toast("PDF 도구를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.");
+  S.pdfBusy = true; renderNow();
+  try {
+    const stage = $("#pdfStage"); stage.innerHTML = reportHTML(sc);
+    if (document.fonts?.ready) await document.fonts.ready;
+    const pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
+    const M = 12, CW = 210 - 2 * M, PH = 297 - 2 * M; let y = M;
+    for (const el of stage.querySelectorAll(".rp-block")) {
+      const cv = await html2canvas(el, { scale: 2, backgroundColor: "#ffffff", logging: false });
+      const h = cv.height * CW / cv.width;
+      if (h <= PH) {
+        if (y + h > M + PH) { pdf.addPage(); y = M; }
+        pdf.addImage(cv.toDataURL("image/jpeg", 0.92), "JPEG", M, y, CW, h); y += h + 2;
+      } else {
+        const per = Math.floor(cv.width * PH / CW); let off = 0;
+        while (off < cv.height) {
+          if (y > M) { pdf.addPage(); y = M; }
+          const sh = Math.min(per, cv.height - off), part = document.createElement("canvas");
+          part.width = cv.width; part.height = sh; part.getContext("2d").drawImage(cv, 0, off, cv.width, sh, 0, 0, cv.width, sh);
+          const hh = sh * CW / cv.width; pdf.addImage(part.toDataURL("image/jpeg", 0.92), "JPEG", M, y, CW, hh); y += hh + 2; off += sh;
+        }
+      }
+    }
+    const n = pdf.getNumberOfPages();
+    for (let k = 1; k <= n; k++) { pdf.setPage(k); pdf.setFontSize(8); pdf.setTextColor(120); pdf.text(`${k} / ${n}`, 210 - M, 297 - 5, { align: "right" }); }
+    stage.innerHTML = "";
+    await saveFile(`LVC_${sc.title.replace(/[^\w가-힣·]+/g, "_")}_v${sc.version}.pdf`, pdf.output("blob"));
+  } catch (e) { console.warn(e); toast("PDF를 만들지 못했습니다."); }
+  S.pdfBusy = false; renderNow();
+}
+
+/* ───────────── 렌더링: 부품 ───────────── */
+const opt = (v, l, sel) => `<option value="${esc(v)}" ${String(v) === String(sel) ? "selected" : ""}>${esc(l)}</option>`;
+const chip = m => `<span class="chip m-${m}">${m}<small>${MODES[m]}</small></span>`;
+const pill = s => `<span class="pill ${stClass(s)}">${esc(s)}</span>`;
+function refsHTML(t) {
+  const q = encodeURIComponent(t.kw || t.name);
+  return `<div class="refs">참고 사례: <a href="https://www.dvidshub.net/search/?q=${q}" target="_blank" rel="noopener">DVIDS 공개 영상 검색</a> · <a href="https://news.google.com/search?q=${q}" target="_blank" rel="noopener">공개 보도 검색</a>${t.concept ? " · AI 생성 영상·개념도는 위협 근거로 쓰지 않음" : ""}</div>`;
+}
+function techItem(t) {
+  const c = catById(t.id);
+  return `<li><div class="tech-top"><b>${esc(c?.name || t.name || t.id)}</b>${(c?.modes || []).map(m => `<span class="mini m-${m}">${m}</span>`).join("")}${c?.concept ? `<span class="tag-concept">미래 개념 참고</span>` : ""}${c ? "" : `<span class="tag-concept">카탈로그에서 삭제됨</span>`}</div><p>${esc(t.reason)}</p>${c ? refsHTML(c) : ""}</li>`;
+}
+function phaseCard(sc, p, i, extra = "", plain = false) {
+  const F = FIELDS[sc.field], pt = pointFor(F, p.loc, i);
+  return `<article class="phase ${!plain && S.activePhase === i ? "is-active" : ""}" id="${plain ? "" : "ph-" + i}" ${plain ? "" : `data-act="focus:${i}"`}>
+    <header class="ph-head"><span class="ph-no">PH-${pad(i + 1)}</span><h3>${esc(p.name)}</h3><span class="ph-when">${esc(p.when || "")}</span><span class="lvc">${p.lvc.map(chip).join("")}</span></header>
+    <p class="ph-content">${esc(p.content)}</p>
+    <div class="ph-sec"><span class="lab">L·V·C 구분 이유</span><p>${esc(p.lvcReason)}</p></div>
+    ${p.tech.length ? `<div class="ph-sec"><span class="lab">투입 신기술과 이유</span><ul class="tech">${p.tech.map(techItem).join("")}</ul></div>` : ""}
+    ${p.threatNote ? `<div class="threat"><span class="lab">대항군 위협</span> ${esc(p.threatNote)}</div>` : ""}
+    <div class="ph-loc">지도 ${esc(pt.key)} · ${esc(pt.name)}</div>
+    ${extra}
+  </article>`;
+}
+function mapSVG(field, phases, active, upto = null) {
+  const F = FIELDS[field], used = {};
+  const pos = phases.map((p, i) => { const pt = pointFor(F, p.loc, i); const n = (used[pt.key] = (used[pt.key] || 0) + 1); return { x: pt.x + (n - 1) * 22, y: pt.y - (n - 1) * 6, pt }; });
+  let grid = "";
+  for (let x = 60, k = 1; x < 600; x += 60, k++) grid += `<line class="m-grid" x1="${x}" y1="0" x2="${x}" y2="380"/><text class="m-gridtxt" x="${x + 3}" y="374">${pad(k)}</text>`;
+  for (let y = 60, k = 0; y < 380; y += 60, k++) grid += `<line class="m-grid" x1="0" y1="${y}" x2="600" y2="${y}"/><text class="m-gridtxt" x="3" y="${y - 3}">${"ABCDEF"[k]}</text>`;
+  const labels = [...new Map(pos.map(q => [q.pt.key, q.pt])).values()].map(pt => { const right = pt.side ? pt.side === "left" : pt.x > 430; return `<text class="m-ptlabel" x="${right ? pt.x - 18 : pt.x + 18}" y="${pt.y + 24}" text-anchor="${right ? "end" : "start"}">${esc(pt.name)}</text>`; }).join("");
+  // upto: 사후검토 재생 중이면 그 단계까지만 진행 축을 그리고 이후 단계는 흐리게 표시
+  const walked = upto == null ? pos : pos.slice(0, upto + 1);
+  const route = walked.length > 1 ? `<path class="m-route" d="${walked.map((q, i) => `${i ? "L" : "M"}${q.x} ${q.y}`).join(" ")}"/>` : "";
+  const marks = pos.map((q, i) => `<g class="mk mk-${phases[i].lvc[0] || "L"} ${active === i ? "on" : ""} ${upto != null && i > upto ? "future" : ""}" data-i="${i}" data-act="focus:${i}" transform="translate(${q.x} ${q.y})"><title>PH-${pad(i + 1)} ${esc(phases[i].name)}</title><circle class="mk-ring" r="18"/><circle class="mk-dot" r="12"/><text class="mk-num" y="4">${i + 1}</text></g>`).join("");
+  return `<svg class="map" viewBox="0 0 600 380" role="img" aria-label="${esc(F.name)} 지형도와 단계별 위치"><rect class="m-land" width="600" height="380"/>${F.draw()}${grid}
+    <rect class="m-plate" x="8" y="8" width="${Math.max(F.name.length, 10) * 12 + 120}" height="22" rx="3"/><text class="m-title" x="16" y="23">${esc(F.name)} · ${esc(F.desc)}</text>
+    <g transform="translate(572 44)"><path class="m-north" d="M0 -14 L6 4 L0 0 L-6 4Z"/><text class="m-gridtxt" x="0" y="16" text-anchor="middle">N</text></g>
+    ${forcesSVG(field)}${route}${labels}${marks}</svg>`;
+}
+const symIcon = (t, side) => `<svg class="sym" width="34" height="28" viewBox="-17 -14 34 28" aria-hidden="true">${unitSym({ x: 0, y: 0, t, s: "" }, side)}</svg>`;
+const legend = field => `<div class="legend">${["L", "V", "C"].map(m => `<span>${chip(m)}</span>`).join("")}<span>번호 = 단계 순서 · 점선 = 진행 축</span></div>
+  <div class="legend"><span>${symIcon("inf", "blue")} 청군(아군)</span><span>${symIcon("inf", "red")} 적색군(가상 대항군)</span><span>굵은 화살표 = 청군 상륙·공격 축 · 붉은 점선 = 대항군 역습·접근 축</span></div>
+  ${FORCES[field] ? `<div class="legend"><span>${esc(FORCES[field].note)}. 부대 위치는 가상 지형 위 예시이며 실제 부대·위치가 아닙니다.</span></div>` : ""}`;
+const mapSide = (sc, active) => mapSVG(sc.field, sc.phases, active) + legend(sc.field);
+
+/* 드론·대드론 전술 기준 — 공개 교리 수준의 일반 개념 */
+const CUAS_DOCTRINE = [
+  ["탐지", "레이더·RF 탐지기·관측병을 겹쳐 운용해 적 드론을 조기에 찾는다. 단일 센서에 의존하지 않는다."],
+  ["식별", "공역 통제선과 식별 절차로 아군 드론과 구분한다. 오인 사격 방지가 훈련 평가 항목이다."],
+  ["판단", "위협도(정찰·자폭·군집)와 교전 규칙에 따라 대응 수단과 우선순위를 정한다."],
+  ["무력화", "전자적 수단(재밍), 물리적 수단(사격·요격), 수동 방호(위장·분산·은폐)를 다층으로 조합한다."],
+  ["아군 드론 운용", "통신 두절 시 자율 복귀·수동 전환 절차를 정하고, 운용조 위치 노출을 최소화한다."],
+  ["드론 대 드론", "요격 드론으로 적 드론을 잡는 개념은 시험 단계다. 미래 개념 참고로만 다룬다."],
+];
+/* 시나리오 2 (중대급 MUM-T 공격) 통제관 자료. [웹 n]은 아래 출처 번호, [가정]은 설계자 가정 */
+const MUMT_REF = {
+  gate: "정찰 → 고립 → 약화 → 고착 → 제압 → 근접섬멸 → 공고화 순으로 진행하고, 단계 조건이 갖춰지지 않으면 다음 단계로 넘어가지 않는다. 우크라이나 장교 평가로 이 절차를 따른 공격의 손실은 약 5~10%, 따르지 않은 실패 공격은 최대 50%였다 [웹 1].",
+  injects: [
+    ["M1", "1", "아군 정찰드론 1대 격추", "예비기 투입, 적 대드론 위치 추정", "웹 1"],
+    ["M2", "2", "적 재머 가동, RF 링크 두절", "광섬유 FPV·무유도 화력·유선/수신호 전환", "웹 1, 2"],
+    ["M3", "2", "아군 재밍이 아군 드론 링크 간섭", "스펙트럼 계획 재조정", "웹 1"],
+    ["M4", "3", "AI가 민간 차량을 적 장갑차로 오탐", "교차확인 후 사격 보류", "IAMSEC p136, p148"],
+    ["M5", "4", "광섬유 케이블이 적에 발견됨(역추적)", "조종사 위치 이동", "웹 2"],
+    ["M6", "5", "화기 UGV 고장", "대체 화력 요청, 계획 조정", "웹 1"],
+    ["M7", "6", "지하 진입 후 통신 두절", "사전 협조 신호로 소탕 지속", "웹 4"],
+    ["M8", "7", "적 FPV 기만·대량·다축 동시 공격", "표적 할당 중복 방지, 은폐", "IAMSEC p150"],
+    ["M9", "전 단계", "킬웹 노드 손실(드론·중계기 30%)", "대체 경로로 임무 지속", "IAMSEC p234"],
+    ["M10", "야간", "악천후·열 교차 시간대", "드론 운용 재판정", "IAMSEC p76, 웹 1"],
+  ],
+  hitl: [
+    "AI는 표적 후보와 방책을 제시하고, 사격·기동 결심은 사람이 한다.",
+    "영상 링크가 있으면 조종사는 AI 표적 고정(pixel lock)보다 수동 조종을 선호한다는 교훈에 따라, 자동 고정은 보조 기능으로만 쓴다 [웹 1].",
+    "AI 지원 표적화는 표적 사이클을 빠르게 하지만 오류와 책임 문제가 따르므로, 모든 승인·거부를 로그로 남긴다 [웹 4].",
+  ],
+  metrics: [
+    ["MOE", "거점 확보 여부·소요시간, 아군 손실률 (성공 공격 5~10% 수준 대비)", "웹 1"],
+    ["MOE", "단계별 조건 충족 후 진행 여부 (무리한 돌격 방지)", "웹 1"],
+    ["MOE", "적 드론 침투율", "IAMSEC p150"],
+    ["MOP", "정찰→타격 소요시간(킬체인), 드론 임무 단계별(도달·탐지·전송) 실패율", "IAMSEC p206"],
+    ["MOP", "중복 표적 할당 횟수", "IAMSEC p150"],
+    ["MOP", "AI 오탐 식별률, 과의존·저의존, 개입 시점", "IAMSEC p136"],
+    ["MOP", "UGV 보급·후송 완료율, 후송 소요시간", "웹 3"],
+    ["MOP", "GNSS 거부 시 위치오차", "IAMSEC p210"],
+  ],
+  cautions: [
+    "우크라이나 사례는 일부 우수 부대의 지역방어 맥락이다. 해안·상륙 사례는 조사 자료에 없어 상륙 단계는 설계자 해석이다.",
+    "산악 UGV 성능 수치는 출처에 없어 시나리오 변수로 둔다.",
+    "편성 수량·적 규모·시간은 모두 가정이며, 실제 부대 편제와 훈련장 안전규정에 맞춰 조정해야 한다.",
+  ],
+  sources: [
+    ["RUSI (Jack Watling), Emergent Approaches to Combined Arms Manoeuvre in Ukraine, 2025-10-23", "https://www.rusi.org/explore-our-research/publications/insights-papers/emergent-approaches-combined-arms-manoeuvre-ukraine"],
+    ["Australian Army Research Centre, Drone Warfare in Ukraine: From Myths to Operational Reality Part 1, 2026-03-11", "https://researchcentre.army.gov.au/library/land-power-forum/drone-warfare-ukraine-myths-operational-reality-part-1"],
+    ["Irregular Warfare Center, Six Key Lessons from Ukraine's Drone War, 2026-05-20", "https://irregularwarfarecenter.org/publications/insights/six-key-lessons-from-ukraines-drone-war/"],
+    ["RUSI, Tactical Lessons from IDF Operations in Gaza 2023 (2024) · CALL, Subterranean Operations (2025) · MWI, Integrating Tactical Drones: Israel (2024)", "https://www.rusi.org/explore-our-research/publications/occasional-papers/tactical-lessons-israel-defense-forces-operations-gaza-2023"],
+    ["CSIS Missile Threat, The Air and Missile War in Nagorno-Karabakh, 2020-12-08", "https://missilethreat.csis.org/the-air-and-missile-war-in-nagorno-karabakh-lessons-for-the-future-of-strike-and-defense/"],
+    ["USMC, Force Design Update (Oct 2025) · USNI News 2026-01-16", "https://news.usni.org/2026/01/16/marines-training-to-field-small-drones-in-combat-units-by-years-end"],
+    ["Korea Times, Korea launches joint drone headquarters, 2026-06-26 · 국방부 보도자료", "https://www.koreatimes.co.kr/southkorea/politics/20260626/korea-launches-joint-drone-headquarters"],
+    ["Defense News, Of fiber-optics and FPVs: 6 questions with a Ukrainian drone trainer, 2025-11-07", "https://www.defensenews.com/global/europe/2025/11/07/of-fiber-optics-and-fpvs-6-questions-with-a-ukrainian-drone-trainer/"],
+  ],
+  videos: [
+    ["B1", "Inside Ukraine's elite unit hunting Russian soldiers with fiber optic drones · Kyiv Independent", "https://www.youtube.com/watch?v=BorF7i_QAFg"],
+    ["B2", "How fiber optic drones reshape warfare in Ukraine · Kyiv Independent", "https://www.youtube.com/watch?v=NwkOxXgAWZ0"],
+    ["B3", "All About The Unmanned Ground Systems: Evacuation, Fire Support, and Logistics · UAF StratCom", "https://www.youtube.com/watch?v=mP3a62kMrW4"],
+    ["B4", "How Ukraine's Ground Robots Rescue Wounded Soldiers", "https://www.youtube.com/watch?v=9IuwjXBlmEA"],
+    ["B5", "Drone arms race transforms war in Ukraine · 60 Minutes", "https://www.youtube.com/watch?v=jgT8URb0HO8"],
+    ["B6", "Why Marines Are Racing to Master Drone Warfare · The New York Times", "https://www.youtube.com/watch?v=xGJgHXTeat0"],
+    ["B7", "드론작전사령부 개편 및 국방 드론·대드론 발전 정책 브리핑 · KTV 국민방송", "https://www.youtube.com/watch?v=5nQrdDPfBLI"],
+  ],
+};
+const link = (href, text) => `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(text)}</a>`;
+function mumtPanels() {
+  const R = MUMT_REF;
+  return `<section class="panel doctrine"><h2 style="margin:0">7단계 공격 절차 · 진행 조건</h2><p style="margin:0;font-size:13px">${esc(R.gate)}</p>
+      <p class="hint" style="margin:0">각 단계 카드의 "진행 조건"을 통제관이 확인한 뒤 다음 단계를 엽니다.</p></section>
+    <section class="panel doctrine"><h2 style="margin:0">통제관 주입 이벤트</h2><div class="inj-wrap"><table class="inj"><thead><tr><th>#</th><th>단계</th><th>이벤트</th><th>기대 행동</th><th>근거</th></tr></thead>
+      <tbody>${R.injects.map(([n, s, e, a, c]) => `<tr><td class="mono">${n}</td><td>${esc(s)}</td><td>${esc(e)}</td><td>${esc(a)}</td><td class="cite">${esc(c)}</td></tr>`).join("")}</tbody></table></div></section>
+    <section class="panel doctrine"><h2 style="margin:0">HITL·교전규칙 원칙</h2><ul>${R.hitl.map(t => `<li>${esc(t)}</li>`).join("")}</ul></section>
+    <section class="panel doctrine"><h2 style="margin:0">평가지표</h2><div class="inj-wrap"><table class="inj"><tbody>${R.metrics.map(([k, t, c]) => `<tr><th>${k}</th><td>${esc(t)}</td><td class="cite">${esc(c)}</td></tr>`).join("")}</tbody></table></div></section>
+    <section class="panel doctrine"><h2 style="margin:0">적용 시 주의</h2><ul>${R.cautions.map(t => `<li>${esc(t)}</li>`).join("")}</ul></section>
+    <section class="panel doctrine"><h2 style="margin:0">근거 자료</h2><p class="hint" style="margin:0">[웹 n] 번호 순서입니다. IAMSEC 2026 초록집과 부대 AI 소요(안)는 내부 자료라 링크가 없습니다.</p>
+      <ol class="srcs">${R.sources.map(([t, u]) => `<li>${link(u, t)}</li>`).join("")}</ol>
+      <span class="lab">관련 영상 (자막 확인)</span><ul class="srcs">${R.videos.map(([n, t, u]) => `<li><span class="mono">${n}</span> ${link(u, t)}</li>`).join("")}</ul></section>`;
+}
+function refPanels(sc) {
+  const ids = new Set(sc.phases.flatMap(p => p.tech.map(t => t.id)));
+  const droneRelated = ["drone", "cuas", "fpv", "fofpv"].some(x => ids.has(x)) || ["1", "4", "6"].includes(String(sc.threat));
+  const out = [];
+  if (sc.op === "mumt") out.push(mumtPanels());
+  if (droneRelated) out.push(`<section class="panel doctrine"><h2 style="margin:0">드론·대드론 전술 기준</h2>
+    <p class="hint" style="margin:0">드론이 투입되거나 적 드론 위협이 있는 단계는 아래 순서로 훈련 절차를 구성합니다.</p>
+    <ol>${CUAS_DOCTRINE.map(([k, v]) => `<li><b>${k}</b> — ${v}</li>`).join("")}</ol>
+    <div class="refs">참고: <a href="https://www.dvidshub.net/search/?q=${encodeURIComponent("counter-UAS training Marines")}" target="_blank" rel="noopener">DVIDS 대드론 훈련 영상 검색</a> · <a href="https://news.google.com/search?q=${encodeURIComponent("대드론 훈련 해병대")}" target="_blank" rel="noopener">공개 보도 검색</a></div></section>`);
+  if (sc.op === "amph" || sc.op === "mumt" || sc.field === "A") out.push(`<section class="panel doctrine"><h2 style="margin:0">장비·개념 참고</h2>
+    <div class="equip">${KAAV_SVG}<p><b>KAAV 상륙돌격장갑차</b> — 해상 이동·접근부터 돌격 상륙까지 상륙 제대를 수송한다. 그림은 직접 그린 실루엣입니다. <a href="https://namu.wiki/w/KAAV-II" target="_blank" rel="noopener">참고: 나무위키 KAAV-II</a></p></div>
+    <div class="equip">${MUMT_SVG}<p><b>유무인 복합체계(MUM-T)</b> — 유인 제대가 드론·무인수상정·지상 로봇과 임무를 나눠 정찰·보급을 맡긴다. <a href="https://namu.wiki/w/%EC%9C%A0%EB%AC%B4%EC%9D%B8%20%EB%B3%B5%ED%95%A9%EC%B2%B4%EA%B3%84" target="_blank" rel="noopener">참고: 나무위키 유무인 복합체계</a></p></div></section>`);
+  return out.join("");
+}
+const KAAV_SVG = `<svg viewBox="0 0 120 60" role="img" aria-label="상륙돌격장갑차 실루엣"><path class="eq-body" d="M8 34 L18 18 L70 16 L76 10 L92 10 L96 16 L110 18 L114 34 Z"/><rect class="eq-solid" x="78" y="4" width="10" height="6"/><path class="eq-solid" d="M8 34 L114 34 L108 44 L14 44 Z"/>${[22, 38, 54, 70, 86, 100].map(x => `<circle class="eq-wheel" cx="${x}" cy="40" r="4"/>`).join("")}<path class="eq-line" d="M0 50 q10 -5 20 0 t20 0 t20 0 t20 0 t20 0 t20 0"/></svg>`;
+const MUMT_SVG = `<svg viewBox="0 0 120 60" role="img" aria-label="유무인 복합체계 개념도">${[[18, 12, "드론"], [102, 12, "USV"], [18, 52, "UGV"], [102, 52, "물류"]].map(([x, y, l]) => `<line class="eq-line" x1="60" y1="32" x2="${x}" y2="${y}" stroke-dasharray="3 3"/><rect class="eq-wheel" x="${x - 13}" y="${y - 7}" width="26" height="14" rx="3"/><text class="eq-txt" x="${x}" y="${y + 3}">${l}</text>`).join("")}<circle class="eq-body" cx="60" cy="32" r="11"/><text class="eq-txt" x="60" y="35">유인</text></svg>`;
+
+function cmtState(c) {
+  if (c.kind === "decision") return c.decision === "approve" ? { cls: "cs-applied", label: "승인" } : { cls: "cs-info", label: "수정 요청" };
+  return { open: { cls: "cs-open", label: "미처리" }, applied: { cls: "cs-applied", label: `반영${c.appliedVersion ? " · v" + c.appliedVersion : ""}` }, rejected: { cls: "cs-rejected", label: "미반영" } }[c.state] || { cls: "cs-open", label: "미처리" };
+}
+function cmtHTML(c, actions = "") {
+  const st = cmtState(c);
+  return `<div class="cmt"><div class="ch"><b>${esc(c.reviewer)}</b><span>${fmt(c.at)} · v${c.version}</span><span class="cs ${st.cls}">${st.label}</span></div><p>${esc(c.text)}</p>${c.state === "rejected" && c.reason ? `<p class="hint" style="margin:0">미반영 사유: ${esc(c.reason)}</p>` : ""}${actions}</div>`;
+}
+const KIND = { create: "초안 생성", ai: "AI 수정안 반영", manual: "직접 수정", status: "상태 변경" };
+function histText(h) {
+  if (h.kind === "status") return `${h.from} → ${h.to}${h.note ? " · " + h.note : ""}`;
+  if (h.kind === "create") return h.note || "초안 생성";
+  const c = S.comments.find(x => x.id === h.commentId);
+  return `PH-${pad(h.phaseIdx + 1)} ${h.phaseName}${c ? ` · 의견 "${c.text.slice(0, 40)}${c.text.length > 40 ? "…" : ""}"` : ""}${h.note ? " · " + h.note : ""}`;
+}
+function phaseRows(p, field) {
+  const pt = pointFor(FIELDS[field], p.loc, 0);
+  return [["단계명", p.name], ["내용", p.content], ["L·V·C", p.lvc.join(" · ")], ["구분 이유", p.lvcReason], ["신기술", p.tech.map(t => `${catById(t.id)?.name || t.name}: ${t.reason}`).join("\n")], ["지도 위치", `${pt.key} ${pt.name}`], ["위협 메모", p.threatNote || ""]];
+}
+function diffTable(a, b, field) {
+  const A = phaseRows(a, field), B = phaseRows(b, field);
+  return `<div class="diff-wrap"><table class="diff"><tbody>${A.map(([k, va], i) => { const vb = B[i][1]; const same = va === vb; return same ? `<tr class="same"><th>${k}</th><td colspan="2">${esc(va) || "-"}</td></tr>` : `<tr class="changed"><th>${k}</th><td class="ch-before">${esc(va).replace(/\n/g, "<br>") || "-"}</td><td>${esc(vb).replace(/\n/g, "<br>") || "-"}</td></tr>`; }).join("")}</tbody></table></div>`;
+}
+function scHeader(sc, mode) {
+  const th = threatById(sc.threat); const F = FIELDS[sc.field];
+  let acts = "";
+  if (mode === "make") {
+    if (sc.status === "작성 중") acts = `<button class="btn primary" data-act="reqReview" ${S.readOnly ? "disabled" : ""}>검토 요청</button>`;
+    else if (sc.status === "수정 요청") acts = `<button class="btn primary" data-act="tab:revise">의견 반영하러 가기</button>`;
+    else if (sc.status === "승인") acts = `<button class="btn primary" data-act="pdf" ${S.pdfBusy ? "disabled" : ""}>${S.pdfBusy ? "PDF 만드는 중…" : "PDF 내려받기"}</button>`;
+    else acts = `<span class="hint" style="margin:0">검토 부서가 확인 중입니다.</span>`;
+  } else if (mode === "revise") {
+    if (sc.status === "수정 요청" || sc.status === "작성 중") acts = `<button class="btn primary" data-act="reqReview" ${S.readOnly ? "disabled" : ""}>${sc.status === "수정 요청" ? "재검토 요청" : "검토 요청"}</button>`;
+    acts += `<button class="btn ${sc.status === "승인" ? "primary" : ""}" data-act="pdf" ${sc.status !== "승인" || S.pdfBusy ? "disabled" : ""} title="${sc.status === "승인" ? "" : "승인된 시나리오만 내려받을 수 있습니다"}">${S.pdfBusy ? "PDF 만드는 중…" : "PDF 내려받기"}</button>`;
+  }
+  return `<div class="panel sc-head">
+    <div class="sc-title">${pill(sc.status)}<h2>${esc(sc.title)}</h2><span class="ver">v${sc.version}</span><div class="row" style="margin-left:auto">${acts}</div></div>
+    <div class="meta"><span>작성 <b>${esc(sc.author)}</b></span><span>아군 <b>해병대 ${esc(sc.unit)}</b></span>${sc.enemy && sc.enemy !== "없음" ? `<span>대항군 <b>가상 적색군 ${esc(sc.enemy)}</b></span>` : ""}<span>기간 <b>${esc(OPS[sc.op]?.period || sc.days + "일")}</b></span><span>훈련장 <b>${esc(sc.site)}</b></span><span>지형 <b>${esc(F.name)}</b></span><span>위협 <b>${esc(th.name)}</b></span></div>
+    <div class="src">${sc.source === "ai" ? "AI 초안" : "교범 기반 규칙 초안"} · 만든 시각 ${fmt(sc.createdAt)} · 최종 수정 ${fmt(sc.updatedAt)}${th.kw ? ` · 위협 근거: <a href="https://news.google.com/search?q=${encodeURIComponent(th.kw)}" target="_blank" rel="noopener">공개 보도 검색</a> (관영 매체 홍보 영상은 과장 가능성 있음)` : ""}</div>
+  </div>`;
+}
+
+/* ───────────── 사후검토(AAR): 재생 · 수행 기록 · 더 나은 결심 추천 ─────────────
+   추천은 두 갈래다. 규칙 기반(아래 표와 시나리오 2 근거)은 항상 나오고, AI 추천은 같은 근거 목록 안에서만 인용하게 한다. */
+const AAR_GATE = { met: "충족 후 진행", unmet_go: "미충족인데 진행", unmet_hold: "미충족이라 보류·대기" };
+const AAR_RESULT = { success: "성공", partial: "부분 성공", fail: "실패" };
+// 주입 이벤트별 기대 행동이 기록에 있는지 볼 때 쓰는 낱말
+const INJECT_KW = {
+  M1: ["예비", "추정"], M2: ["광섬유", "유선", "수신호", "무유도"], M3: ["스펙트럼", "주파수", "재조정"], M4: ["교차", "확인", "보류"],
+  M5: ["위치", "이동"], M6: ["대체", "조정"], M7: ["신호", "협조"], M8: ["중복", "할당", "은폐"], M9: ["대체", "경로", "중계"], M10: ["재판정", "기상", "보류"],
+};
+// 시나리오 2 이외 작전용 일반 이벤트: [id, 이벤트, 기대 행동, 낱말, 근거]
+const GENERIC_EVENTS = [
+  ["G1", "통신·데이터링크 두절", "유선·수신호·사전 협조 신호로 전환", ["유선", "수신호", "신호", "전환"], "웹 1"],
+  ["G2", "적 드론 출현", "탐지 → 식별 → 판단 → 무력화, 위장·분산 병행", ["탐지", "재밍", "분산", "은폐", "위장", "대드론"], "웹 5"],
+  ["G3", "무인체계 고장", "대체 수단 요청, 계획 조정", ["대체", "예비", "조정"], "웹 1"],
+  ["G4", "피아식별 혼선", "사격 중지, 위치 공유로 교차 확인", ["확인", "중지", "식별"], "IAMSEC p252"],
+];
+// 단계별 교범 기준 점검: [더 나은 행동, 이유, 근거]. 키는 "작전.태그" 또는 "태그"
+const AAR_BEST = {
+  "mumt.prep": [["아군 재밍과 드론 링크의 주파수·시간 분할을 소대 수준까지 협조한다.", "아군 재밍이 아군 드론 링크를 끊는 일이 반복해서 보고됐다.", "웹 1"], ["디지털 트윈 Rock-Drill에서 기상별 드론 운용 가부를 먼저 판정한다.", "기상·열 교차 시간대는 드론 운용 성패를 바꾼다.", "IAMSEC p76"]],
+  "mumt.recon": [["정찰 전에 대드론조가 적 정찰드론부터 소모시킨다.", "정찰드론팀 자체가 적의 우선 표적이다.", "웹 1"], ["AI 표적 후보는 사람이 교차 확인해 확정한다.", "AI 오탐(민간 차량 등)이 실제로 보고됐다.", "웹 4, IAMSEC p136"]],
+  "mumt.isolate": [["FPV팀을 접촉선 후방 근거리(전방진지 기준 -3~3km)에 둔다.", "FPV 격파가 이 거리대에 집중됐다.", "웹 1"], ["재밍 대비로 광섬유 FPV를 예비로 둔다.", "RF 링크는 재머에 쉽게 끊긴다.", "웹 2"]],
+  "mumt.weaken": [["화기탑재 UGV는 돌격 개시 전까지 사격하지 않는다.", "먼저 쏘면 측방 오프셋 위치가 드러난다.", "웹 1"]],
+  "mumt.fix": [["FPV 성공률을 70~80%로 보고 예비 기체를 확보한다.", "우수 조종사도 100% 성공하지 못한다.", "웹 8"], ["광섬유 FPV 발사 후 조종사는 바로 위치를 옮긴다.", "케이블이 조종사 위치를 드러낸다.", "웹 2, 8"]],
+  "mumt.suppress": [["연막·UGV 측방 제압·방호차량 엄호를 같은 시각에 맞춘다.", "소대급 장갑 플랫폼은 화력과 피탄 분산에 여전히 필요하다.", "웹 1"]],
+  "mumt.contact": [["건물·지하 진입은 드론·UGV가 먼저, 소탕은 사람이 한다.", "가자 지하 작전 교훈이다.", "웹 4"], ["통신·GNSS 두절을 전제로 신호를 미리 협조하고 UWB/LoRa로 아군 위치를 공유한다.", "지하·시가지에서 통신 두절과 오사 위험이 크다.", "웹 4, IAMSEC p252"]],
+  "mumt.logistics": [["보급 이동 시간을 분산하고 후송 우선순위는 중대장이 정한다.", "이동로가 가장 위험하고 UGV는 늘 모자란다.", "웹 1, 3"], ["대드론은 탐지(전파·음향) → 차단 → 은폐·그물·분산으로 겹쳐 쓴다.", "단일 수단으로는 FPV 대량 공격을 막지 못한다.", "웹 1, 5"]],
+  recon: [["정찰 자산에 대드론 방호와 교대 운용을 붙인다.", "정찰 자산이 먼저 적의 표적이 된다.", "웹 1"]],
+  detect: [["탐지 보고 즉시 대응 방책을 여러 개 비교해 결심 시간을 줄인다.", "결심이 늦으면 적이 먼저 움직인다.", "일반 원칙"]],
+  contact: [["돌격 전에 적 화기 고착·제압 조건을 확인한다.", "조건을 건너뛴 돌격은 손실이 크게 늘었다.", "웹 1"], ["적 드론 위협에는 위장·분산 같은 수동 방호를 함께 쓴다.", "전자적 수단만으로는 모두 막지 못한다.", "웹 5"]],
+  logistics: [["보급 이동 시간을 분산하고 무인 보급을 먼저 쓴다.", "보급 이동로가 가장 위험한 구간이다.", "웹 1, 3"]],
+  _: [["단계 목표와 진행 조건을 먼저 정하고, 충족을 확인한 뒤 다음 단계로 넘어간다.", "조건 기반 진행이 손실을 줄였다.", "웹 1"]],
+};
+const aarKey = (sc, i) => `${sc.id}-p${i}`;
+const aarOf = (sc, i) => S.aar.find(a => a.id === aarKey(sc, i)) || null;
+const blankAar = () => ({ gate: "", injects: [], action: "", result: "", loss: "", minutes: "" });
+// 입력을 시작할 때만(create) 초안을 만든다. 그 전에는 저장된 기록을 그대로 보여 준다.
+function aarDraft(sc, i, create = false) {
+  const k = aarKey(sc, i);
+  if (S.aarDrafts[k]) return S.aarDrafts[k];
+  const a = aarOf(sc, i), base = a ? { ...blankAar(), ...clone(a) } : blankAar();
+  if (create) S.aarDrafts[k] = base;
+  return base;
+}
+const aarChanged = (sc, i) => { const d = S.aarDrafts[aarKey(sc, i)], a = aarOf(sc, i) || blankAar(); return !!d && ["gate", "action", "result", "loss", "minutes"].some(f => String(d[f] ?? "") !== String(a[f] ?? "")) || (!!d && JSON.stringify(d.injects || []) !== JSON.stringify(a.injects || [])); };
+function eventsFor(sc, i) {
+  if (sc.op !== "mumt") return GENERIC_EVENTS.map(([id, ev, exp, kw, cite]) => ({ id, ev, exp, kw, cite }));
+  const last = sc.phases.length - 1;
+  return MUMT_REF.injects.filter(([, s]) => s === String(i) || s === "전 단계" || (s === "야간" && i === last))
+    .map(([id, s, ev, exp, cite]) => ({ id, ev, exp, kw: INJECT_KW[id] || [], cite }));
+}
+function parseCites(s) {
+  let pre = "";
+  return String(s || "").split(/,\s*/).map(t => t.trim()).filter(Boolean).map(t => { const m = t.match(/^(웹|IAMSEC)\s*(.+)$/); if (m) { pre = m[1]; return `${m[1]} ${m[2]}`; } return pre ? `${pre} ${t}` : t; });
+}
+function citeHTML(k) {
+  const m = k.match(/^웹 (\d+)$/);
+  if (m && MUMT_REF.sources[m[1] - 1]) { const [t, u] = MUMT_REF.sources[m[1] - 1]; return `<a href="${esc(u)}" target="_blank" rel="noopener" title="${esc(t)}">${esc(k)}</a>`; }
+  if (k.startsWith("IAMSEC")) return `${esc(k)} <span class="hint" style="margin:0">(내부 자료)</span>`;
+  if (k === "계획") return "시나리오 계획 시간";
+  return esc(k);
+}
+function plannedMin(when) {
+  const hs = [...String(when || "").matchAll(/H([+-]\d+)?/g)].map(m => Number(m[1] || 0));
+  return hs.length === 2 ? Math.abs(hs[1] - hs[0]) * 60 : null;
+}
+function recommend(sc, i, r) {
+  const p = sc.phases[i], out = [];
+  const add = (kind, act, why, cite) => out.push({ kind, act, why, cite: parseCites(cite) });
+  const act = r.action || "";
+  const gateTxt = (p.content.match(/진행 조건:\s*([^.]+)/) || [])[1];
+  if (r.gate === "unmet_go") add("fix", `진행 조건${gateTxt ? `(${gateTxt})` : ""}이 갖춰질 때까지 다음 행동을 보류하고, 미충족 조건부터 해결한다.`, "조건이 갖춰지지 않은 채 넘어간 공격은 손실이 최대 50%까지 커졌고, 절차를 지킨 공격은 약 5~10%였다.", "웹 1");
+  if (r.gate === "unmet_hold") add("keep", "조건이 갖춰지지 않아 보류한 결심은 그대로 유지한다.", "단계 조건을 지킨 공격이 손실이 적었다.", "웹 1");
+  eventsFor(sc, i).filter(e => (r.injects || []).includes(e.id)).forEach(e => {
+    if (e.kw.some(k => act.includes(k))) add("keep", `${e.id} "${e.ev}" 대응은 유지한다 (기대 행동: ${e.exp}).`, "기록된 조치가 기대 행동과 맞는다.", e.cite);
+    else add("fix", `${e.id} "${e.ev}" 상황의 기대 행동: ${e.exp}.`, act ? "기록된 조치에 이 이벤트의 기대 행동이 보이지 않는다." : "이벤트가 있었는데 조치 기록이 비어 있다.", e.cite);
+  });
+  const loss = Number(r.loss);
+  if (String(r.loss).trim() !== "" && !isNaN(loss)) {
+    if (loss >= 50) add("fix", "이 단계를 중단·재편성 기준으로 삼고, 앞 단계(고착·제압) 조건부터 다시 확인한다.", `손실률 ${loss}%는 절차를 지키지 않은 실패 공격 수준(최대 50%)이다.`, "웹 1");
+    else if (loss > 10) add("fix", "분산·은폐를 늘리고, 다음 단계 진입 전 적 화기 억제 여부를 다시 확인한다.", `손실률 ${loss}%는 성공한 공격의 손실 수준(약 5~10%)을 넘는다.`, "웹 1");
+    else add("keep", "현재 분산·진행 속도를 유지한다.", `손실률 ${loss}%는 성공한 공격 수준(약 5~10%) 안이다.`, "웹 1");
+  }
+  const plan = plannedMin(p.when), min = Number(r.minutes);
+  if (plan && min > plan * 1.5) add("check", `계획(${plan}분)보다 ${min - plan}분 늦어졌다. 다음 단계의 시간 통제와 예비 시간을 다시 잡는다.`, "지연은 적에게 증원·역습 시간을 준다.", "계획");
+  if (act && p.tech.some(t => t.id === "aistaff") && !/(확인|승인|교차|결심)/.test(act)) add("check", "AI가 낸 표적·방책 후보는 사람이 교차 확인해 승인하고, 승인·거부를 로그로 남긴다.", "AI 지원 표적화는 빠르지만 오류와 책임 문제가 따른다.", "웹 4");
+  const bad = r.result === "fail" || r.result === "partial";
+  (AAR_BEST[`${sc.op}.${p.tag}`] || AAR_BEST[p.tag] || AAR_BEST._).forEach(([a, w, c]) => add(bad ? "fix" : "check", a, w, c));
+  return out;
+}
+const REC_KIND = { fix: ["개선", "rk-fix"], keep: ["유지", "rk-keep"], check: ["점검", "rk-check"] };
+const recHTML = r => { const [l, c] = REC_KIND[r.kind] || REC_KIND.check; return `<li class="rec ${c}"><div class="rec-top"><span class="rk">${l}</span><b>${esc(r.act)}</b></div>${r.why ? `<p>${esc(r.why)}</p>` : ""}<div class="cites">근거: ${r.cite.length ? r.cite.map(citeHTML).join(" · ") : "일반 원칙"}</div></li>`; };
+function aarCiteKeys() {
+  const keys = MUMT_REF.sources.map((_, n) => `웹 ${n + 1}`);
+  const pages = new Set([...MUMT_REF.injects.map(r => r[4]), ...MUMT_REF.metrics.map(r => r[2]), ...Object.values(AAR_BEST).flat().map(r => r[2])].flatMap(parseCites).filter(k => k.startsWith("IAMSEC")));
+  return [...keys, ...pages, "일반 원칙"];
+}
+async function aiRecommend(sc, i) {
+  const k = aarKey(sc, i), d = aarDraft(sc, i), p = sc.phases[i];
+  S.aarAi[k] = { loading: true }; renderNow();
+  const allowed = aarCiteKeys();
+  const evs = eventsFor(sc, i).filter(e => (d.injects || []).includes(e.id));
+  const prompt = `너는 해병대 교육훈련 사후검토(AAR) 분석관이다. 모든 정보는 가상이다. 아래 한 단계의 계획과 실제 수행 기록을 비교해, 더 나은 전투행동 결심을 최대 3개 추천하라.
+규칙:
+- 각 추천은 누가·무엇을·언제 하는지 구체적인 행동으로 쓰고, 이유를 한 문장으로 쓴다.
+- 근거는 [근거 목록]의 키만 쓴다. 맞는 근거가 없으면 "일반 원칙"이라고 쓴다. 기록에 없는 사실은 지어내지 않는다.
+- 규칙 기반 점검과 같은 말을 반복하지 말고, 기록에서 드러난 결심 문제에 집중한다.
+- 실제 부대명·지명·인명·좌표는 쓰지 않는다.
+
+[시나리오 조건]
+${condText(sc)}
+
+[단계 계획 — PH-${pad(i + 1)} ${p.when || ""}]
+${phaseJSON(p)}
+
+[실제 수행 기록]
+${JSON.stringify({ 진행조건: AAR_GATE[d.gate] || "기록 없음", 주입이벤트: evs.map(e => `${e.id} ${e.ev}`), 실제조치: d.action || "기록 없음", 결과: AAR_RESULT[d.result] || "기록 없음", 손실률: d.loss === "" ? "기록 없음" : d.loss + "%", 소요분: d.minutes || "기록 없음" })}
+
+[규칙 기반 점검 결과]
+${recommend(sc, i, d).map(r => "- " + r.act).join("\n")}
+
+[근거 목록: 키 | 내용]
+${MUMT_REF.sources.map(([t], n) => `웹 ${n + 1} | ${t}`).join("\n")}
+${allowed.filter(x => x.startsWith("IAMSEC")).map(x => `${x} | IAMSEC 2026 초록집 (내부 자료)`).join("\n")}
+일반 원칙 | 출처 없는 일반 전술 원칙
+
+JSON만 답하라. 형식: {"recs":[{"act":"","why":"","cite":["웹 1"]}]}`;
+  try {
+    const out = await sample.json(prompt, { modelTier: "default", effort: "medium" });
+    const recs = (Array.isArray(out?.recs) ? out.recs : []).slice(0, 3).map(r => ({ kind: "fix", act: str(r?.act), why: str(r?.why), cite: (Array.isArray(r?.cite) ? r.cite : [r?.cite]).map(c => str(c)).filter(c => allowed.includes(c)) })).filter(r => r.act);
+    if (!recs.length) throw { code: "empty" };
+    const a = aarOf(sc, i);
+    await write(() => Store.set("aar", k, { ...(a ? clone(a) : { ...blankAar(), scenarioId: sc.id, phaseIdx: i }), id: undefined, ai: { recs, at: now(), by: S.author } }));
+    S.aarAi[k] = null;
+  } catch (e) {
+    S.aarAi[k] = { error: e?.code === "rate_limited" ? "AI 요청이 많아 잠시 후 다시 시도해 주세요." : "AI 추천을 받지 못했습니다. 규칙 기반 추천을 참고해 주세요." };
+  }
+  renderNow();
+}
+function aarPlay(on) {
+  clearInterval(S.aarTimer); S.aarTimer = null; S.aarPlaying = on;
+  if (!on) return;
+  const sc = cur(); if (sc && S.aarStep >= sc.phases.length - 1) S.aarStep = 0;
+  S.aarTimer = setInterval(() => {
+    const s = cur();
+    if (!s || S.tab !== "aar" || S.aarStep >= s.phases.length - 1) { aarPlay(false); render(); return; }
+    S.aarStep++; render();
+  }, 3000);
+}
+function viewAar() {
+  const sc = cur();
+  if (!sc) return `<div class="panel empty">왼쪽 목록에서 사후검토할 시나리오를 고르세요. 훈련을 마친 시나리오의 단계를 재생하며 실제 수행을 기록하면, 전투행동별로 더 나은 결심과 근거를 보여 줍니다.</div>`;
+  const n = sc.phases.length, i = Math.max(0, Math.min(S.aarStep, n - 1)), p = sc.phases[i];
+  const recs = sc.phases.map((_, k) => aarOf(sc, k));
+  const done = recs.filter(Boolean);
+  const losses = done.map(a => Number(a.loss)).filter(x => String(x) !== "NaN" && x >= 0);
+  const fixes = sc.phases.reduce((s, _, k) => s + (recs[k] ? recommend(sc, k, recs[k]).filter(r => r.kind === "fix").length : 0), 0);
+  const cnt = v => done.filter(a => a.result === v).length;
+  const summary = `<section class="panel"><div class="summary"><span>기록한 단계 <b>${done.length}/${n}</b></span><span>성공 <b>${cnt("success")}</b></span><span>부분 성공 <b>${cnt("partial")}</b></span><span>실패 <b>${cnt("fail")}</b></span><span>최대 손실률 <b>${losses.length ? Math.max(...losses) + "%" : "-"}</b></span><span>개선 추천 <b>${fixes}</b></span></div></section>`;
+  const ctl = `<div class="aar-ctl"><button class="btn small" data-act="aarGo:0" title="처음으로" aria-label="처음으로">⏮</button><button class="btn small" data-act="aarGo:${i - 1}" ${i === 0 ? "disabled" : ""} aria-label="이전 단계">◀ 이전</button>
+    <button class="btn small primary" data-act="aarPlay" aria-label="${S.aarPlaying ? "일시정지" : "재생"}">${S.aarPlaying ? "⏸ 일시정지" : "▶ 재생"}</button><button class="btn small" data-act="aarGo:${i + 1}" ${i === n - 1 ? "disabled" : ""} aria-label="다음 단계">다음 ▶</button><button class="btn small" data-act="aarGo:${n - 1}" aria-label="마지막으로">⏭</button>
+    <input type="range" min="0" max="${n - 1}" value="${i}" data-aar-step aria-label="재생 위치"><span class="pos">PH-${pad(i + 1)} / ${pad(n)}</span></div>
+    <div class="tl">${sc.phases.map((q, k) => `<button class="tl-i ${recs[k]?.result ? "r-" + recs[k].result : ""}" data-act="aarGo:${k}" aria-current="${k === i}"><small>PH-${pad(k + 1)} ${esc(q.when || "")}</small><span>${esc(q.name)}</span><small>${recs[k] ? esc(AAR_RESULT[recs[k].result] || "기록됨") : "미기록"}</small></button>`).join("")}</div>`;
+  const d = aarDraft(sc, i), evs = eventsFor(sc, i), locked = S.readOnly;
+  const optsOf = (m, v, ph) => `<option value="">${ph}</option>` + Object.entries(m).map(([k, l]) => opt(k, l, v)).join("");
+  const gateTxt = (p.content.match(/진행 조건:\s*([^.]+)/) || [])[1];
+  const form = `<section class="panel"><h2 style="margin:0 0 8px">실제 수행 기록 <span class="hint" style="margin:0;font-weight:400">${aarChanged(sc, i) ? "· 저장 안 된 변경 있음" : aarOf(sc, i) ? `· ${esc(aarOf(sc, i).by || "")} ${fmt(aarOf(sc, i).at)} 저장` : ""}</span></h2>
+    <div class="aar-form">
+      <div class="field"><label for="aar-gate">진행 조건${gateTxt ? ` (${esc(gateTxt)})` : ""}</label><select id="aar-gate" data-aar="gate" ${locked ? "disabled" : ""}>${optsOf(AAR_GATE, d.gate, "선택")}</select></div>
+      <div class="field"><label for="aar-result">결과</label><select id="aar-result" data-aar="result" ${locked ? "disabled" : ""}>${optsOf(AAR_RESULT, d.result, "선택")}</select></div>
+      <div class="two"><div class="field"><label for="aar-loss">손실률(%)</label><input id="aar-loss" type="number" min="0" max="100" value="${esc(d.loss)}" data-aar="loss" ${locked ? "disabled" : ""}></div><div class="field"><label for="aar-min">소요(분)</label><input id="aar-min" type="number" min="0" value="${esc(d.minutes)}" data-aar="minutes" ${locked ? "disabled" : ""}></div></div>
+      <div class="field full"><span class="flab">발생한 ${sc.op === "mumt" ? "주입 이벤트" : "상황"}</span><div class="ev-list">${evs.length ? evs.map(e => `<label><input type="checkbox" id="aar-ev-${e.id}" data-aar-inj="${e.id}" ${(d.injects || []).includes(e.id) ? "checked" : ""} ${locked ? "disabled" : ""}><span><b class="mono">${e.id}</b> ${esc(e.ev)}</span></label>`).join("") : `<span class="hint" style="margin:0">이 단계에 정해 둔 이벤트가 없습니다.</span>`}</div></div>
+      <div class="field full"><label for="aar-act">실제 전투행동·결심</label><textarea id="aar-act" data-aar="action" placeholder="예: 재밍으로 링크가 끊겨 박격포 화력으로 전환, 광섬유 FPV는 쓰지 않음" ${locked ? "disabled" : ""}>${esc(d.action)}</textarea></div>
+    </div>
+    <div class="row" style="margin-top:8px"><button class="btn primary" data-act="aarSave" ${locked ? "disabled" : ""}>기록 저장</button>${aarChanged(sc, i) ? `<button class="btn ghost" data-act="aarReset">되돌리기</button>` : ""}</div></section>`;
+  const filled = d.gate || d.result || d.action || String(d.loss).trim() || d.minutes || (d.injects || []).length;
+  const rules = filled ? recommend(sc, i, d) : [];
+  const ai = S.aarAi[aarKey(sc, i)], saved = aarOf(sc, i)?.ai;
+  const aiBlock = !sample ? `<p class="hint" style="margin:0">AI를 쓸 수 없는 화면이라 규칙 기반 추천만 보여 줍니다.</p>`
+    : ai?.loading ? `<p class="hint" style="margin:0">AI가 기록을 분석하는 중입니다…</p><div class="bar"><i></i></div>`
+    : `${ai?.error ? `<p class="hint" style="margin:0;color:var(--warn)">${esc(ai.error)}</p>` : ""}${saved ? `<span class="lab">AI 추천 · ${esc(saved.by || "")} ${fmt(saved.at)}</span><ul class="recs">${saved.recs.map(r => recHTML({ ...r, kind: "fix" })).join("")}</ul>` : ""}
+      <div><button class="btn small" data-act="aarAi" ${locked ? "disabled" : ""}>${saved ? "AI 추천 다시 받기" : "AI 추천 받기"}</button>${filled ? "" : ` <span class="hint" style="margin:0">기록을 먼저 입력하세요.</span>`}</div>`;
+  const recPanel = `<section class="panel"><h2 style="margin:0 0 4px">더 나은 전투행동 추천</h2><p class="hint" style="margin:0 0 8px">기록을 입력하면 바로 바뀝니다. 개선 = 다르게 했어야 할 결심, 유지 = 잘한 결심, 점검 = 교범 기준 확인 항목.</p>
+    ${filled ? `<ul class="recs">${rules.map(recHTML).join("")}</ul>` : `<p class="hint" style="margin:0">이 단계의 실제 수행을 기록하면 추천이 나옵니다.</p>`}
+    <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">${aiBlock}</div></section>`;
+  return scHeader(sc, "aar") + summary + `<section class="panel">${ctl}</section>` +
+    `<div class="board"><div class="map-wrap">${mapSVG(sc.field, sc.phases, i, i)}${legend(sc.field)}</div><div class="cards">${phaseCard(sc, p, i, "", true)}${form}${recPanel}</div></div>`;
+}
+
+/* ───────────── 렌더링: 화면 ───────────── */
+function viewMake() {
+  const f = S.form, sc = cur();
+  const th = threatById(f.threat);
+  const form = `<section class="panel"><h2>훈련 조건</h2><div class="form-grid">
+    <div class="field"><label for="f-op">작전 형태</label><select id="f-op" data-bind="op">${Object.entries(OPS).map(([k, o]) => opt(k, o.name, f.op)).join("")}</select></div>
+    <div class="two"><div class="field"><label for="f-unit">아군 규모 (해병대)</label><select id="f-unit" data-bind="unit">${UNITS.map(u => opt(u, u, f.unit)).join("")}</select></div>
+    <div class="field"><label for="f-enemy">대항군 규모 (가상 적색군)</label><select id="f-enemy" data-bind="enemy">${ENEMY_SIZES.map(u => opt(u, u, f.enemy)).join("")}</select></div></div>
+    <div class="field"><label for="f-days">기간(일)</label><input id="f-days" type="number" min="1" max="30" value="${esc(f.days)}" data-bind="days"></div>
+    <div class="field"><label for="f-goal">훈련 목표</label><input id="f-goal" type="text" value="${esc(f.goal)}" data-bind="goal" placeholder="예: 해안 교두보 확보"></div>
+    <div class="field"><label for="f-site">훈련장 유형</label><select id="f-site" data-bind="site">${SITE_TYPES.map(s => opt(s, s, f.site)).join("")}</select></div>
+    <div class="field"><label for="f-field">가상 훈련장(지형도)</label><select id="f-field" data-bind="field">${Object.entries(FIELDS).map(([k, F]) => opt(k, `${F.name} · ${F.desc}`, f.field)).join("")}</select></div>
+    <div class="field"><label for="f-threat">대항군 위협 패턴 (선택)</label><select id="f-threat" data-bind="threat">${THREATS.map(t => opt(t.id, t.rel ? `${t.name} · 주 관련 ${t.rel}` : t.name, f.threat)).join("")}</select>${th.goal ? `<span class="hint" style="margin:0">훈련 목표: ${esc(th.goal)}</span>` : ""}</div>
+    <div class="field"><span class="flab">작성자</span><span>${esc(S.author)} <span class="hint">(오른쪽 위에서 변경)</span></span></div>
+    <button class="btn primary wide" data-act="gen" ${S.generating || S.readOnly ? "disabled" : ""}>시나리오 초안 만들기</button>
+    <p class="hint" style="margin:0">${sample ? "AI가 교범 기반 기본안을 조건에 맞게 다듬습니다. 처음 한 번은 AI 사용 허용을 묻습니다." : "AI를 쓸 수 없는 화면이라 교범 기반 규칙으로 만듭니다."}</p>
+  </div></section>`;
+  let right;
+  if (S.generating) right = `<div class="panel gen"><h2>초안을 만드는 중입니다</h2><div class="bar"><i></i></div><p class="hint" style="margin:0">${sample ? `AI가 ${OPS[f.op].phases.length}개 단계를 구성하고 있습니다 · 받은 글자 <span id="genChars" class="mono">${S.genChars.toLocaleString()}</span>` : "규칙으로 단계를 구성하고 있습니다."}</p>${sample ? `<button class="btn" data-act="genStop">AI 중단하고 규칙안으로 만들기</button>` : ""}</div>`;
+  else if (sc) right = scHeader(sc, "make") + `<div class="board"><div class="map-wrap">${mapSide(sc, S.activePhase)}</div><div class="cards">${sc.phases.map((p, i) => phaseCard(sc, p, i)).join("")}${refPanels(sc)}</div></div>`;
+  else {
+    const base = buildBaseline(f);
+    right = `<div class="panel"><div class="sc-title" style="margin-bottom:10px"><span class="pill st-작성중">미리보기</span><h2>${esc(OPS[f.op].name)} 기본 단계</h2></div>
+      <div class="board"><div class="map-wrap">${mapSide({ field: f.field, phases: base }, null)}</div>
+      <div><p class="hint" style="margin:0 0 8px">아직 저장되지 않은 교범 기반 기본안입니다. "시나리오 초안 만들기"를 누르면 조건에 맞춰 단계별 내용·L·V·C 이유·신기술 투입 지점이 채워집니다.</p>
+      <ul class="preview-list">${base.map((p, i) => `<li><span class="ph-no">PH-${pad(i + 1)}</span><span>${esc(p.name)}</span><span class="ph-when">${esc(p.when)}</span><span class="lvc">${p.lvc.map(chip).join("")}</span></li>`).join("")}</ul></div></div></div>`;
+  }
+  return `<div class="make">${form}<div class="result">${right}</div></div>`;
+}
+function viewReview() {
+  if (!S.reviewOk) return gateHTML("검토하기", "기술 검토 부서용 화면입니다. 접근 코드를 입력하세요.");
+  const sc = cur(), q = queue();
+  const top = `<div class="panel row" style="justify-content:space-between"><div class="field" style="min-width:200px"><label for="rv-name">검토자</label><select id="rv-name" data-bind="reviewer">${REVIEWERS.map(r => opt(r, r, S.reviewer)).join("")}</select></div><div class="summary"><span>검토 대기 <b>${q.length}</b>건</span>${q.slice(0, 3).map(s => `<a href="#" data-act="select:${s.id}">${esc(s.title)}</a>`).join("")}</div></div>`;
+  if (!sc) return top + `<div class="panel empty">왼쪽 목록에서 검토할 시나리오를 고르세요. 검토 요청 · 재검토 상태가 결정 대상입니다.</div>`;
+  const cm = commentsOf(sc.id), canDecide = sc.status === "검토 요청" || sc.status === "재검토", locked = sc.status === "승인";
+  const box = (i) => locked ? "" : `<textarea class="box" id="d-${sc.id}-${i}" data-draft="${sc.id}:${i}" placeholder="${i < 0 ? "종합 의견 (선택)" : "이 단계에 대한 의견. 예: 이 단계는 무인수상정이 더 적합"}">${esc(S.drafts[sc.id + ":" + i] || "")}</textarea>`;
+  const cards = sc.phases.map((p, i) => {
+    const mine = cm.filter(c => c.phaseIdx === i);
+    return phaseCard(sc, p, i, `<div class="cmts"><span class="lab">검토 의견 ${mine.length ? mine.length + "건" : ""}</span>${mine.map(c => cmtHTML(c)).join("")}${locked ? "" : box(i) + `<div class="row"><button class="btn small" data-act="addCmt:${i}" ${S.readOnly ? "disabled" : ""}>의견 등록</button></div>`}</div>`);
+  }).join("");
+  const overall = cm.filter(c => c.phaseIdx < 0);
+  const open = cm.filter(c => c.kind === "comment" && c.state === "open").length;
+  const decide = `<div class="panel decide"><h2 style="margin:0">검토 결정</h2>${overall.map(c => cmtHTML(c)).join("")}
+    ${locked ? `<p class="hint" style="margin:0">승인된 시나리오입니다. 작성자가 PDF를 내려받을 수 있습니다.</p>` : `${box(-1)}
+    <div class="row"><button class="btn" data-act="addCmt:-1" ${S.readOnly ? "disabled" : ""}>종합 의견만 등록</button><button class="btn primary" data-act="decide:request" ${!canDecide || S.readOnly ? "disabled" : ""}>수정 요청 보내기</button><button class="btn ok" data-act="decide:approve" ${!canDecide || S.readOnly ? "disabled" : ""}>승인</button></div>
+    <p class="hint" style="margin:0">${canDecide ? (open ? `미처리 의견이 ${open}건 있습니다. 승인하면 현재 버전(v${sc.version})이 완성본이 됩니다.` : `현재 버전(v${sc.version})을 기준으로 결정합니다.`) : `지금은 '${esc(sc.status)}' 상태라 의견만 달 수 있습니다. 담당관이 검토를 요청하면 결정할 수 있습니다.`}</p>`}</div>`;
+  return top + scHeader(sc, "review") + `<div class="board"><div class="map-wrap">${mapSide(sc, S.activePhase)}</div><div class="cards">${cards}${refPanels(sc)}${decide}</div></div>`;
+}
+function editForm(sc, i) {
+  const d = S.editing.draft, F = FIELDS[sc.field];
+  const openC = commentsOf(sc.id).filter(c => c.kind === "comment" && c.state === "open" && (c.phaseIdx === i || c.phaseIdx < 0));
+  return `<div class="edit"><div class="ph-head"><span class="ph-no">PH-${pad(i + 1)}</span><h3>직접 수정</h3></div>
+    <div class="field"><label for="e-name">단계명</label><input id="e-name" type="text" value="${esc(d.name)}" data-edit="name"></div>
+    <div class="field"><label for="e-content">내용</label><textarea id="e-content" data-edit="content">${esc(d.content)}</textarea></div>
+    <div class="field"><span class="flab">L·V·C 구분 (먼저 고른 것이 주 방식)</span><div class="checks">${["L", "V", "C"].map(m => `<label><input type="checkbox" id="e-lvc-${m}" data-edit-lvc="${m}" ${d.lvc.includes(m) ? "checked" : ""}>${chip(m)}</label>`).join("")}</div></div>
+    <div class="field"><label for="e-reason">구분 이유</label><textarea id="e-reason" data-edit="lvcReason">${esc(d.lvcReason)}</textarea></div>
+    <div class="field"><span class="flab">투입 신기술 (최대 3)</span>${d.tech.map((t, k) => `<div class="techrow"><select id="e-tid-${k}" data-edit-tid="${k}">${catalog().map(c => opt(c.id, c.name, t.id)).join("")}</select><input id="e-tr-${k}" type="text" value="${esc(t.reason)}" data-edit-tr="${k}" placeholder="투입 이유"><button class="btn small ghost" data-act="eDelTech:${k}">삭제</button></div>`).join("")}
+      ${d.tech.length < 3 ? `<div><button class="btn small" data-act="eAddTech">기술 추가</button></div>` : ""}</div>
+    <div class="two"><div class="field"><label for="e-loc">지도 위치</label><select id="e-loc" data-edit="loc">${F.points.map(p => opt(p.key, `${p.key} ${p.name}`, d.loc)).join("")}</select></div>
+    <div class="field"><label for="e-cm">관련 의견</label><select id="e-cm" data-edit="commentId">${opt("", "없음", S.editing.commentId)}${openC.map(c => opt(c.id, `${c.reviewer}: ${c.text.slice(0, 30)}`, S.editing.commentId)).join("")}</select></div></div>
+    <div class="field"><label for="e-threat">대항군 위협 메모</label><input id="e-threat" type="text" value="${esc(d.threatNote || "")}" data-edit="threatNote"></div>
+    <div class="row"><button class="btn primary" data-act="eSave">저장하고 v${sc.version + 1}로 올리기</button><button class="btn ghost" data-act="eCancel">취소</button></div></div>`;
+}
+function viewRevise() {
+  const sc = cur();
+  if (!sc) return `<div class="panel empty">왼쪽 목록에서 수정할 시나리오를 고르세요.</div>`;
+  const cm = commentsOf(sc.id), locked = sc.status === "승인" || S.readOnly;
+  const cnt = k => cm.filter(c => c.kind === "comment" && c.state === k).length;
+  const actsFor = c => {
+    if (locked || c.kind !== "comment" || c.state !== "open") return "";
+    if (S.rejecting === c.id) return `<div class="row"><input class="box" id="rj-${c.id}" data-draft="rj:${c.id}" type="text" placeholder="미반영 사유" value="${esc(S.drafts["rj:" + c.id] || "")}" style="flex:1"><button class="btn small" data-act="rjSave:${c.id}">저장</button><button class="btn small ghost" data-act="rjCancel">취소</button></div>`;
+    const pr = S.proposals[c.id];
+    if (c.phaseIdx < 0) return `<div class="row"><button class="btn small" data-act="markDone:${c.id}">반영 완료 표시</button><button class="btn small ghost" data-act="rjStart:${c.id}">미반영</button></div>`;
+    const prop = pr?.loading ? `<div class="prop"><span class="hint" style="margin:0">수정안을 만드는 중입니다…</span><div class="bar"><i></i></div></div>`
+      : pr ? `<div class="prop"><div class="row"><span class="lab">${pr.source === "ai" ? "AI 수정안" : "규칙 기반 수정안"}</span><span style="font-size:13px">${esc(pr.summary)}</span></div>${diffTable(sc.phases[c.phaseIdx], pr.phase, sc.field)}<div class="row"><button class="btn primary small" data-act="propOk:${c.id}">수락 (v${sc.version + 1})</button><button class="btn small ghost" data-act="propNo:${c.id}">거절</button></div></div>` : "";
+    return prop + (pr ? "" : `<div class="row"><button class="btn small primary" data-act="prop:${c.id}">${sample ? "AI 수정안 받기" : "수정안 받기"}</button><button class="btn small" data-act="edit:${c.phaseIdx}:${c.id}">직접 수정</button><button class="btn small ghost" data-act="rjStart:${c.id}">미반영</button></div>`);
+  };
+  const overall = cm.filter(c => c.phaseIdx < 0);
+  const rows = sc.phases.map((p, i) => {
+    const mine = cm.filter(c => c.phaseIdx === i);
+    const left = S.editing?.idx === i ? editForm(sc, i) : phaseCard(sc, p, i);
+    return `<div class="rev-row">${left}<div class="rev-side"><h4>PH-${pad(i + 1)} 의견 ${mine.length}건</h4>${mine.map(c => cmtHTML(c, actsFor(c))).join("") || `<p class="hint" style="margin:0">의견이 없습니다.</p>`}${locked || S.editing?.idx === i ? "" : `<div><button class="btn small ghost" data-act="edit:${i}:">이 단계 직접 수정</button></div>`}</div></div>`;
+  }).join("");
+  const hs = historyOf(sc.id);
+  const hist = `<section class="panel"><h2>버전 이력</h2><div class="hist">${hs.map(h => `<button class="hrow" data-act="hist:${h.id}" aria-expanded="${S.histSel === h.id}"><span class="v">v${h.version}</span><span class="k">${KIND[h.kind] || h.kind}</span><span class="d">${esc(histText(h))}</span><span class="w">${esc(h.by)} · ${fmt(h.at)}</span></button>${S.histSel === h.id && h.before ? `<div class="hdetail"><p class="hint" style="margin:0 0 6px">이전(취소선) → 이후 비교</p>${diffTable(h.before, h.after, sc.field)}</div>` : ""}`).join("")}</div></section>`;
+  return scHeader(sc, "revise") + `<div class="panel"><div class="summary"><span>미처리 <b>${cnt("open")}</b></span><span>반영 <b>${cnt("applied")}</b></span><span>미반영 <b>${cnt("rejected")}</b></span>${locked && sc.status === "승인" ? `<span>승인된 시나리오라 더 수정할 수 없습니다.</span>` : ""}</div>${overall.length ? `<div class="cmts" style="margin-top:10px"><span class="lab">전체 의견 · 결정</span>${overall.map(c => cmtHTML(c, actsFor(c))).join("")}</div>` : ""}</div>` + rows + hist;
+}
+function gateHTML(title, msg) {
+  return `<section class="panel gate"><h2 style="margin:0">${title}</h2><p class="hint" style="margin:0">${msg} 접근 코드는 실수 방지용이며 보안 장치가 아닙니다.</p>
+    <div class="field"><label for="rvCode">접근 코드</label><input id="rvCode" type="text" autocomplete="off" placeholder="코드 입력"></div>
+    ${S.gateErr ? `<p class="hint" style="margin:0;color:var(--warn)">${esc(S.gateErr)}</p>` : ""}<div><button class="btn primary" data-act="rvLogin">들어가기</button></div></section>`;
+}
+function viewCatalog() {
+  if (!S.reviewOk) return gateHTML("신기술 카탈로그", "카탈로그 관리는 기술 검토 부서만 할 수 있습니다.");
+  const items = catalog();
+  const row = c => {
+    if (S.catEdit?.id === c.id) {
+      const d = S.catEdit.draft;
+      return `<tr><td><input id="ce-name" type="text" value="${esc(d.name)}" data-cat="name"></td><td><input id="ce-use" type="text" value="${esc(d.use)}" data-cat="use"></td>
+        <td><div class="checks">${["L", "V", "C"].map(m => `<label><input type="checkbox" id="ce-m-${m}" data-cat-mode="${m}" ${d.modes.includes(m) ? "checked" : ""}>${m}</label>`).join("")}</div></td>
+        <td><input id="ce-kw" type="text" value="${esc(d.kw)}" data-cat="kw" placeholder="영문 검색어"><label style="font-size:12px;display:flex;gap:5px;margin-top:4px"><input type="checkbox" id="ce-concept" data-cat-concept ${d.concept ? "checked" : ""}>미래 개념 참고</label></td>
+        <td><div class="row"><button class="btn small primary" data-act="catSave">저장</button><button class="btn small ghost" data-act="catCancel">취소</button></div></td></tr>`;
+    }
+    return `<tr><td><b>${esc(c.name)}</b>${c.concept ? ` <span class="tag-concept">미래 개념</span>` : ""}</td><td>${esc(c.use)}</td><td>${c.modes.map(m => `<span class="mini m-${m}">${m}</span>`).join(" ")}</td><td class="mono" style="font-size:12px">${esc(c.kw)}</td>
+      <td><div class="row">${S.catDel === c.id ? `<span class="hint" style="margin:0">삭제할까요?</span><button class="btn small primary" data-act="catDelYes:${c.id}">삭제</button><button class="btn small ghost" data-act="catCancel">취소</button>` : `<button class="btn small" data-act="catEdit:${c.id}">수정</button><button class="btn small ghost" data-act="catDel:${c.id}">삭제</button>`}</div></td></tr>`;
+  };
+  const isNew = S.catEdit && !items.some(c => c.id === S.catEdit.id);
+  return `<section class="panel"><div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">신기술 카탈로그 <span class="ver mono" style="font-size:12px;color:var(--muted)">${items.length}종</span></h2>
+    <div class="row"><button class="btn" data-act="catAdd" ${S.catEdit || S.readOnly ? "disabled" : ""}>기술 추가</button>${S.catReset ? `<span class="hint" style="margin:0">기본 9종으로 되돌릴까요?</span><button class="btn small primary" data-act="catResetYes">되돌리기</button><button class="btn small ghost" data-act="catCancel">취소</button>` : `<button class="btn ghost" data-act="catReset" ${S.readOnly ? "disabled" : ""}>기본값으로</button>`}</div></div>
+    <p class="hint" style="margin:0 0 10px">여기서 바꾼 카탈로그는 다음 초안 생성과 AI 수정안부터 쓰입니다. 이미 만든 시나리오의 기술 이름은 그대로 남습니다.</p>
+    <div class="tbl"><table class="cat"><thead><tr><th>기술</th><th>주 활용</th><th>영역</th><th>참고 사례 검색어</th><th></th></tr></thead><tbody>${items.map(row).join("")}${isNew ? row(S.catEdit.draft) : ""}</tbody></table></div></section>`;
+}
+function renderTabs() {
+  const q = queue().length;
+  const tabs = [["make", "S1", "시나리오 만들기"], ["review", "S2", "검토하기", q], ["revise", "S3", "수정과 이력"], ["aar", "S4", "사후검토"], ["catalog", "+", "카탈로그"]];
+  $("#tabs").innerHTML = tabs.map(([k, sid, l, b]) => `<button class="tab" data-act="tab:${k}" ${S.tab === k ? 'aria-current="page"' : ""}><span class="sid">${sid}</span>${l}${b ? `<span class="badge">${b}</span>` : ""}</button>`).join("");
+  $("#who").innerHTML = S.tab === "review" || S.tab === "catalog"
+    ? (S.reviewOk ? `<span class="lab">검토자</span><span>${esc(S.reviewer)}</span>` : "")
+    : `<label for="who-author" class="lab">작성자</label><select id="who-author" data-bind="author">${AUTHORS.map(a => opt(a, a, S.author)).join("")}</select>`;
+}
+function renderSide() {
+  const list = S.scenarios.slice().sort((a, b) => {
+    if (S.tab === "review") { const qa = a.status === "검토 요청" || a.status === "재검토", qb = b.status === "검토 요청" || b.status === "재검토"; if (qa !== qb) return qa ? -1 : 1; }
+    return a.updatedAt < b.updatedAt ? 1 : -1;
+  });
+  const items = !S.loaded ? `<div class="side-empty">저장소에 연결하는 중…</div>`
+    : list.length ? list.map(s => `<button class="sitem" data-act="select:${s.id}" aria-current="${s.id === S.currentId}"><div class="row" style="gap:6px">${pill(s.status)}<span class="m">v${s.version}</span></div><span class="t">${esc(s.title)}</span><span class="m">${esc(s.author)} · ${esc(s.unit)} · ${fmt(s.updatedAt)}</span></button>`).join("")
+      : `<div class="side-empty">아직 시나리오가 없습니다. 조건을 고르고 "시나리오 초안 만들기"를 누르면 여기에 쌓입니다.</div>`;
+  $("#side").innerHTML = `<div class="side-head"><h2>시나리오 <span class="mono" style="color:var(--muted);font-weight:500">${S.scenarios.length}</span></h2><button class="btn small" data-act="new">새로 만들기</button></div><div class="side-list">${items}</div>`;
+}
+function renderView() {
+  $("#view").innerHTML = S.tab === "make" ? viewMake() : S.tab === "review" ? viewReview() : S.tab === "revise" ? viewRevise() : S.tab === "aar" ? viewAar() : viewCatalog();
+}
+function isTyping() { const a = document.activeElement; return !!a && a.closest?.("#view, #who") && /^(TEXTAREA|INPUT|SELECT)$/.test(a.tagName); }
+function render() { if (isTyping()) { S.dirty = true; return; } renderNow(); }
+function renderNow() { S.dirty = false; renderTabs(); renderSide(); renderView(); }
+function showBanner() {
+  const b = $("#banner");
+  const msg = S.mode === "local" ? "서버 저장소에 연결되지 않아 이 브라우저에만 저장됩니다. 잠시 후 새로고침해 주세요." : S.readOnly ? "보기 전용입니다. 이 링크에서는 내용을 바꿀 수 없습니다." : "";
+  b.textContent = msg; b.hidden = !msg;
+}
+function setActive(i) {
+  S.activePhase = i;
+  document.querySelectorAll(".phase[id^='ph-']").forEach(el => el.classList.toggle("is-active", el.id === "ph-" + i));
+  document.querySelectorAll(".mk").forEach(el => el.classList.toggle("on", Number(el.dataset.i) === i));
+}
+
+/* ───────────── 이벤트 ───────────── */
+document.addEventListener("click", async e => {
+  const el = e.target.closest("[data-act]"); if (!el) return;
+  const [act, a1, a2] = el.dataset.act.split(":");
+  if (act === "focus") {
+    if (e.target.closest("input, textarea, select, a, button, label")) return;
+    const i = Number(a1);
+    if (S.tab === "aar") { aarPlay(false); S.aarStep = i; return renderNow(); }
+    setActive(i);
+    if (el.classList.contains("mk")) document.getElementById("ph-" + i)?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+    return;
+  }
+  if (el.tagName === "A") e.preventDefault();
+  const sc = cur();
+  switch (act) {
+    case "tab": S.tab = a1; S.editing = null; S.rejecting = null; S.gateErr = ""; aarPlay(false); break;
+    case "select": S.currentId = a1; S.activePhase = null; S.editing = null; S.rejecting = null; S.histSel = null; S.aarStep = 0; aarPlay(false); break;
+    case "aarGo": if (sc) { aarPlay(false); S.aarStep = Math.max(0, Math.min(sc.phases.length - 1, Number(a1))); } break;
+    case "aarPlay": aarPlay(!S.aarPlaying); break;
+    case "aarReset": if (sc) delete S.aarDrafts[aarKey(sc, S.aarStep)]; break;
+    case "aarSave": {
+      if (!sc) return;
+      const i = S.aarStep, k = aarKey(sc, i), d = clone(aarDraft(sc, i)); delete d.id;
+      if (await write(() => Store.set("aar", k, { ...d, scenarioId: sc.id, phaseIdx: i, phaseName: sc.phases[i].name, by: S.author, at: now(), ai: aarOf(sc, i)?.ai || null }))) { delete S.aarDrafts[k]; toast(`PH-${pad(i + 1)} 수행 기록을 저장했습니다.`); }
+      break;
+    }
+    case "aarAi": {
+      if (!sc || !sample) return;
+      const d = aarDraft(sc, S.aarStep);
+      if (!(d.gate || d.result || str(d.action) || String(d.loss).trim() || d.minutes || (d.injects || []).length)) return toast("이 단계의 수행 기록을 먼저 입력하세요.");
+      aiRecommend(sc, S.aarStep); return;
+    }
+    case "new": S.currentId = null; S.tab = "make"; break;
+    case "gen": generate(); return;
+    case "genStop": S.genCtl?.abort(); return;
+    case "reqReview": if (sc) await setStatus(sc, sc.status === "수정 요청" ? "재검토" : "검토 요청", "", S.author) && toast(sc.status === "수정 요청" ? "재검토를 요청했습니다." : "검토를 요청했습니다."); break;
+    case "rvLogin": {
+      const v = ($("#rvCode")?.value || "").trim().toUpperCase();
+      if (v === ACCESS_CODE) { S.reviewOk = true; S.gateErr = ""; ssSet("lvc-rv", "1"); } else S.gateErr = "코드가 맞지 않습니다. 검토 부서에 확인하세요.";
+      break;
+    }
+    case "addCmt": {
+      if (!sc) return; const i = Number(a1), key = sc.id + ":" + i, text = str(S.drafts[key]);
+      if (!text) return toast("의견 내용을 입력하세요.");
+      if (await addComment(sc, i, text)) { S.drafts[key] = ""; toast("의견을 등록했습니다."); }
+      break;
+    }
+    case "decide": {
+      if (!sc) return; const key = sc.id + ":-1", text = str(S.drafts[key]), approve = a1 === "approve";
+      const ok = await addComment(sc, -1, text || (approve ? "승인합니다." : "단계별 의견을 반영해 주세요."), { kind: "decision", decision: approve ? "approve" : "request", state: "info" });
+      if (ok && await setStatus(sc, approve ? "승인" : "수정 요청", "", S.reviewer)) { S.drafts[key] = ""; toast(approve ? "승인했습니다." : "수정 요청을 보냈습니다."); }
+      break;
+    }
+    case "prop": { const c = S.comments.find(x => x.id === a1); if (sc && c) proposeFor(sc, c); return; }
+    case "propOk": {
+      const c = S.comments.find(x => x.id === a1), pr = S.proposals[a1];
+      if (sc && c && pr?.phase && await applyPhaseChange(sc, c.phaseIdx, pr.phase, { kind: pr.source === "ai" ? "ai" : "manual", commentId: c.id, note: pr.summary })) { delete S.proposals[a1]; toast(`v${sc.version + 1}로 저장했습니다.`); }
+      break;
+    }
+    case "propNo": delete S.proposals[a1]; break;
+    case "edit": { if (!sc) return; const i = Number(a1); const p = sc.phases[i]; S.editing = { idx: i, commentId: a2 || "", draft: clone(p) }; S.rejecting = null; break; }
+    case "eCancel": S.editing = null; break;
+    case "eAddTech": { const first = catalog()[0]; if (S.editing && first) S.editing.draft.tech.push({ id: first.id, name: first.name, reason: "" }); break; }
+    case "eDelTech": S.editing?.draft.tech.splice(Number(a1), 1); break;
+    case "eSave": {
+      if (!sc || !S.editing) return; const d = S.editing.draft;
+      if (!d.lvc.length) return toast("L·V·C 중 하나 이상을 고르세요.");
+      d.tech = d.tech.map(t => ({ ...t, name: catById(t.id)?.name || t.name }));
+      if (JSON.stringify(d) === JSON.stringify(sc.phases[S.editing.idx]) && !S.editing.commentId) { S.editing = null; break; }
+      if (await applyPhaseChange(sc, S.editing.idx, d, { kind: "manual", commentId: S.editing.commentId })) { toast(`v${sc.version + 1}로 저장했습니다.`); S.editing = null; }
+      break;
+    }
+    case "rjStart": S.rejecting = a1; break;
+    case "rjCancel": S.rejecting = null; break;
+    case "rjSave": {
+      const reason = str(S.drafts["rj:" + a1]); if (!reason) return toast("미반영 사유를 입력하세요.");
+      if (await write(() => Store.update("comments", a1, { state: "rejected", reason, handledBy: S.author, handledAt: now() }))) S.rejecting = null;
+      break;
+    }
+    case "markDone": await write(() => Store.update("comments", a1, { state: "applied", appliedVersion: sc?.version || 1, handledBy: S.author, handledAt: now() })); break;
+    case "hist": S.histSel = S.histSel === a1 ? null : a1; break;
+    case "pdf": if (sc) exportPdf(sc); return;
+    case "catAdd": S.catEdit = { id: uid("t"), draft: { id: "", name: "", use: "", modes: ["L"], kw: "", alias: [], concept: false } }; S.catEdit.draft.id = S.catEdit.id; S.catDel = null; break;
+    case "catEdit": S.catEdit = { id: a1, draft: clone(catById(a1)) }; S.catDel = null; break;
+    case "catCancel": S.catEdit = null; S.catDel = null; S.catReset = false; break;
+    case "catDel": S.catDel = a1; S.catEdit = null; break;
+    case "catSave": {
+      const d = S.catEdit.draft; if (!str(d.name)) return toast("기술 이름을 입력하세요."); if (!d.modes.length) return toast("영역을 하나 이상 고르세요.");
+      d.name = str(d.name); d.alias = [...new Set([...(d.alias || []), d.name])];
+      const items = catalog().some(c => c.id === d.id) ? catalog().map(c => (c.id === d.id ? d : c)) : [...catalog(), d];
+      if (await write(() => Store.set("config", "catalog", { items, updatedAt: now(), by: S.reviewer }))) { S.catEdit = null; toast("카탈로그를 저장했습니다."); }
+      break;
+    }
+    case "catDelYes": {
+      const items = catalog().filter(c => c.id !== a1);
+      if (!items.length) return toast("기술이 하나 이상 있어야 합니다.");
+      if (await write(() => Store.set("config", "catalog", { items, updatedAt: now(), by: S.reviewer }))) S.catDel = null;
+      break;
+    }
+    case "catReset": S.catReset = true; break;
+    case "catResetYes": if (await write(() => Store.set("config", "catalog", { items: CATALOG0, updatedAt: now(), by: S.reviewer }))) S.catReset = false; break;
+    default: return;
+  }
+  renderNow();
+});
+document.addEventListener("input", e => {
+  const t = e.target;
+  if (t.dataset.bind) {
+    const k = t.dataset.bind;
+    if (k === "author") { S.author = t.value; lsSet("lvc-author", t.value); return renderNow(); }
+    if (k === "reviewer") { S.reviewer = t.value; ssSet("lvc-reviewer", t.value); return renderNow(); }
+    if (k === "op") { const prev = OPS[S.form.op], next = OPS[t.value]; if (!str(S.form.goal) || S.form.goal === prev.goal) S.form.goal = next.goal; S.form.field = next.field; S.form.site = next.site; ["unit", "enemy", "threat", "days"].forEach(k => { if (next[k]) S.form[k] = next[k]; }); }
+    S.form[k] = t.value;
+    if (t.tagName === "SELECT" || k === "days") { if (t.tagName === "SELECT") renderNow(); else { S.dirty = true; } }
+    return;
+  }
+  if (t.dataset.draft) { S.drafts[t.dataset.draft] = t.value; return; }
+  if (t.hasAttribute("data-aar-step")) { aarPlay(false); S.aarStep = Number(t.value); return renderNow(); }
+  if (t.dataset.aar || t.dataset.aarInj) {
+    const sc = cur(); if (!sc) return;
+    const d = aarDraft(sc, S.aarStep, true);
+    if (t.dataset.aarInj) { const id = t.dataset.aarInj; d.injects = t.checked ? [...new Set([...(d.injects || []), id])] : (d.injects || []).filter(x => x !== id); return renderNow(); }
+    d[t.dataset.aar] = t.value;
+    if (t.tagName === "SELECT") return renderNow();
+    S.dirty = true; return;
+  }
+  if (S.editing) {
+    const d = S.editing.draft;
+    if (t.dataset.edit) { if (t.dataset.edit === "commentId") S.editing.commentId = t.value; else d[t.dataset.edit] = t.value; }
+    if (t.dataset.editLvc) { const m = t.dataset.editLvc; d.lvc = t.checked ? [...d.lvc.filter(x => x !== m), m] : d.lvc.filter(x => x !== m); }
+    if (t.dataset.editTid) { const c = catById(t.value); d.tech[Number(t.dataset.editTid)] = { ...d.tech[Number(t.dataset.editTid)], id: t.value, name: c?.name || t.value }; }
+    if (t.dataset.editTr) d.tech[Number(t.dataset.editTr)].reason = t.value;
+  }
+  if (S.catEdit) {
+    const d = S.catEdit.draft;
+    if (t.dataset.cat) d[t.dataset.cat] = t.value;
+    if (t.dataset.catMode) { const m = t.dataset.catMode; d.modes = t.checked ? [...new Set([...d.modes, m])].sort((a, b) => "LVC".indexOf(a) - "LVC".indexOf(b)) : d.modes.filter(x => x !== m); }
+    if (t.hasAttribute("data-cat-concept")) d.concept = t.checked;
+  }
+});
+document.addEventListener("change", e => { if (e.target.type === "checkbox") e.target.dispatchEvent(new Event("input", { bubbles: true })); });
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "rvCode") { e.preventDefault(); document.querySelector('[data-act="rvLogin"]')?.click(); } });
+document.addEventListener("focusout", () => setTimeout(() => { if (S.dirty && !isTyping()) renderNow(); }, 0));
+
+/* ───────────── 시작 ───────────── */
+async function boot() {
+  renderNow();
+  let user = null;
+  if (window.claude?.use) {
+    const [db, u, sm, dl] = await Promise.all(["db", "user", "sample", "downloads"].map(n => window.claude.use(n).catch(() => null)));
+    DB = db; user = u; sample = sm; downloads = dl;
+  }
+  if (DB) { Store = Remote; S.mode = "shared"; try { if ((await user?.can?.("data.write")) === false) S.readOnly = true; } catch {} }
+  else { Store = Local; S.mode = "local"; }
+  showBanner();
+  let pending = 5;
+  const onData = key => list => { S[key] = list; if (pending > 0 && --pending === 0) S.loaded = true; if (key !== "config" && pending <= 0) S.loaded = true; render(); };
+  ["scenarios", "comments", "history", "config", "aar"].forEach(c => Store.subscribe(c, onData(c)));
+}
+boot();
+</script>
