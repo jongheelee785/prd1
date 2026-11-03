@@ -15,3 +15,8 @@ PRD_AX_브리핑허브.md
 
 # 로컬 개발 설정
 .claude/
+
+# 생성한 썸네일·영상
+*.mp4
+thumbnail.png
+lvc-thumbnail*.png

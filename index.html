@@ -1631,6 +1631,15 @@ document.addEventListener("focusout", () => setTimeout(() => { if (S.dirty && !i
 
 /* ───────────── 시작 ───────────── */
 async function boot() {
+  // 바로가기 링크: ?s=시나리오ID&tab=make|review|revise|aar&step=단계번호(1부터)
+  try {
+    const q = new URLSearchParams(location.search);
+    if (["make", "review", "revise", "aar"].includes(q.get("tab"))) S.tab = q.get("tab");
+    if (q.get("s")) S.currentId = q.get("s");
+    if (q.get("step")) S.aarStep = Math.max(0, Number(q.get("step")) - 1 || 0);
+    // ?view=shorts: 사후검토를 세로 쇼츠 영상으로 녹화하는 화면(웹앱 전용 shorts.js)
+    if (q.get("view") === "shorts") { const el = document.createElement("script"); el.src = "shorts.js"; document.head.appendChild(el); }
+  } catch {}
   renderNow();
   let user = null;
   if (window.claude?.use) {
