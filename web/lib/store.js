@@ -10,6 +10,17 @@ const clean = v => String(v || "").trim().replace(/^["']|["']$/g, "").trim();
 const url = clean(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL);
 const key = clean(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY);
 export let configError = "";
+// 키 자체는 밝히지 않고, 어떤 종류의 키이며 어느 프로젝트 것인지만 알려 준다(설정 확인용)
+export const keyInfo = (() => {
+  if (!key) return null;
+  if (key.startsWith("sb_secret_")) return { kind: "secret" };
+  if (key.startsWith("sb_publishable_")) return { kind: "publishable(공개용, 잘못된 키)" };
+  try {
+    const p = JSON.parse(Buffer.from(key.split(".")[1], "base64url").toString());
+    const urlRef = (url.match(/^https:\/\/([^.]+)\.supabase\.co/) || [])[1] || "";
+    return { kind: "jwt", role: p.role, sameProject: p.ref === urlRef };
+  } catch { return { kind: "알 수 없는 형식", length: key.length, masked: /[•*]/.test(key), hasSpace: /\s/.test(key) }; }
+})();
 let sb = null;
 if (url || key) {
   if (!/^https:\/\/[^\s/]+/.test(url)) configError = "SUPABASE_URL이 https://로 시작하는 Project URL이 아닙니다.";
