@@ -6,7 +6,7 @@ import pg from "pg";
 // Supabase 연결 정보는 서버 환경 변수에서만 읽는다. 서비스(secret) 키는 브라우저로 보내지 않는다.
 // Vercel의 Supabase 연동은 SUPABASE_URL·SUPABASE_SERVICE_ROLE_KEY를, 직접 넣을 때는 SUPABASE_SECRET_KEY도 받는다.
 // 붙여 넣을 때 섞여 든 공백·따옴표는 떼어 낸다. 값이 잘못되면 빌드를 멈추지 않고 configError로 알린다.
-const clean = v => String(v || "").trim().replace(/^["']|["']$/g, "").trim();
+const clean = v => String(v || "").trim().replace(/^[A-Z_]+\s*=\s*/, "").replace(/^["']|["']$/g, "").trim();
 const url = clean(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL);
 const key = clean(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY);
 export let configError = "";
@@ -19,7 +19,7 @@ export const keyInfo = (() => {
     const p = JSON.parse(Buffer.from(key.split(".")[1], "base64url").toString());
     const urlRef = (url.match(/^https:\/\/([^.]+)\.supabase\.co/) || [])[1] || "";
     return { kind: "jwt", role: p.role, sameProject: p.ref === urlRef };
-  } catch { return { kind: "알 수 없는 형식", length: key.length, masked: /[•*]/.test(key), hasSpace: /\s/.test(key) }; }
+  } catch { return { kind: "알 수 없는 형식", length: key.length, masked: /[•*]/.test(key), hasSpace: /\s/.test(key), startsWith: key.slice(0, 3).replace(/[A-Za-z0-9]/g, c => /[a-z]/.test(c) ? "a" : /[A-Z]/.test(c) ? "A" : "9") }; }
 })();
 let sb = null;
 if (url || key) {
