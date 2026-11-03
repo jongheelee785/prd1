@@ -36,7 +36,7 @@
 | `SUPABASE_URL` | Supabase 프로젝트 URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase 서비스(secret) 키. 서버 전용 |
 | `GEMINI_API_KEY` | Google AI Studio에서 만든 API 키 |
-| `GEMINI_MODEL` | (선택) 기본 `gemini-flash-latest` |
+| `GEMINI_MODEL` | (선택) 기본 `gemini-3.8-flash`. 바쁘면 `gemini-3.5-flash` → `gemini-3.8-flash-lite` → `gemini-3.5-flash-lite` 순으로 자동 전환 |
 
 Vercel **Storage → Supabase**로 연결하면 `SUPABASE_URL`·`SUPABASE_SERVICE_ROLE_KEY`·`POSTGRES_URL_NON_POOLING`이 자동으로 들어가고, 앱이 첫 요청 때 `setup.sql`을 실행해 표를 만듭니다. Supabase를 따로 만든 경우에는 SQL Editor에서 `setup.sql`을 직접 실행합니다.
 

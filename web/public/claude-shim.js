@@ -58,6 +58,9 @@
         if (done) break;
         const delta = dec.decode(value, { stream: true });
         text += delta;
+        // 서버가 다른 모델로 다시 받기 시작하면 그 앞의 글은 버린다
+        const k = text.lastIndexOf("\u0000RESET");
+        if (k >= 0) text = text.slice(k + 6);
         opts.onText?.({ text: text.split("\n\u0000")[0], delta });
       }
     } catch (e) { throw err(e?.name === "AbortError" ? "cancelled" : "unavailable"); }
