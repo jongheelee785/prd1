@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // 표 자동 생성에 쓰는 SQL 파일을 서버 함수에 함께 싣는다
+  outputFileTracingIncludes: { "/api/**": ["./supabase/setup.sql"] },
   async rewrites() {
     return { beforeFiles: [{ source: "/", destination: "/index.html" }] };
   },

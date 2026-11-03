@@ -38,6 +38,8 @@
 | `GEMINI_API_KEY` | Google AI Studio에서 만든 API 키 |
 | `GEMINI_MODEL` | (선택) 기본 `gemini-flash-latest` |
 
+Vercel **Storage → Supabase**로 연결하면 `SUPABASE_URL`·`SUPABASE_SERVICE_ROLE_KEY`·`POSTGRES_URL_NON_POOLING`이 자동으로 들어가고, 앱이 첫 요청 때 `setup.sql`을 실행해 표를 만듭니다. Supabase를 따로 만든 경우에는 SQL Editor에서 `setup.sql`을 직접 실행합니다.
+
 키가 없으면 앱은 브라우저 저장 + 규칙 기반 초안으로 동작합니다.
 
 ## 로컬 실행

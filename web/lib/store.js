@@ -1,4 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import pg from "pg";
 
 // Supabase 연결 정보는 서버 환경 변수에서만 읽는다. 서비스(secret) 키는 브라우저로 보내지 않는다.
 // Vercel의 Supabase 연동은 SUPABASE_URL·SUPABASE_SERVICE_ROLE_KEY를, 직접 넣을 때는 SUPABASE_SECRET_KEY도 받는다.
@@ -14,17 +17,34 @@ export const persistent = !!sb;
 const T = "lvc_docs";
 const check = ({ data, error }) => { if (error) throw error; return data; };
 
+// Vercel에서 Supabase를 연결하면 POSTGRES_URL_NON_POOLING도 들어온다. 그 경우 첫 요청 때
+// supabase/setup.sql을 실행해 표·함수를 만든다(여러 번 실행해도 안전). 값이 없으면 SQL Editor에서 직접 실행한다.
+const pgUrl = process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL;
+let ready = null;
+function ensureSetup() {
+  if (!sb || !pgUrl) return Promise.resolve();
+  return (ready ||= (async () => {
+    const sql = await readFile(path.join(process.cwd(), "supabase", "setup.sql"), "utf8");
+    const client = new pg.Client({ connectionString: pgUrl.replace(/[?&]sslmode=[^&]*/, ""), ssl: { rejectUnauthorized: false } });
+    await client.connect();
+    try { await client.query(sql); } finally { await client.end(); }
+  })().catch(e => { ready = null; console.error("supabase setup failed", e); }));
+}
+
 export async function list(c) {
   if (!sb) return Object.entries(mem.h[c] || {}).map(([id, v]) => ({ id, data: v }));
+  await ensureSetup();
   return check(await sb.from(T).select("id, data").eq("col", c));
 }
 export async function get(c, id) {
   if (!sb) return mem.h[c]?.[id] ?? null;
+  await ensureSetup();
   const row = check(await sb.from(T).select("data").eq("col", c).eq("id", id).maybeSingle());
   return row?.data ?? null;
 }
 export async function set(c, id, v) {
   if (!sb) { (mem.h[c] = mem.h[c] || {})[id] = v; return; }
+  await ensureSetup();
   check(await sb.from(T).upsert({ col: c, id, data: v, updated_at: new Date().toISOString() }));
 }
 export async function del(c, id) {
@@ -36,5 +56,6 @@ export async function del(c, id) {
 export async function allow(bucket, limit) {
   const k = `${bucket}:${Math.floor(Date.now() / 3600000)}`;
   if (!sb) { mem.n[k] = (mem.n[k] || 0) + 1; return mem.n[k] <= limit; }
+  await ensureSetup();
   return check(await sb.rpc("lvc_hit", { p_key: k, p_limit: limit })) === true;
 }
