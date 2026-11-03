@@ -1,4 +1,4 @@
-import { persistent } from "../../../lib/store";
+import { persistent, configError } from "../../../lib/store";
 import { json } from "../../../lib/http";
 
 export const dynamic = "force-dynamic";
@@ -7,5 +7,5 @@ export const dynamic = "force-dynamic";
 // 배포 환경에서 Supabase가 없으면 서버 메모리는 인스턴스마다 달라 쓸 수 없으므로 브라우저 저장으로 돌린다.
 export function GET() {
   const db = persistent || process.env.NODE_ENV !== "production" || !process.env.VERCEL;
-  return json({ db, persistent, ai: !!process.env.GEMINI_API_KEY });
+  return json({ db, persistent, ai: !!process.env.GEMINI_API_KEY, configError });
 }

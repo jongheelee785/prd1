@@ -13,7 +13,7 @@ const SYSTEM = "너는 군 교육훈련용 LVC 시나리오 설계·사후검토
 
 // API 키는 서버 환경 변수(GEMINI_API_KEY)에서만 읽는다. 브라우저로 보내지 않는다.
 let client = null;
-const getClient = () => (client ||= new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }));
+const getClient = () => (client ||= new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY.trim().replace(/^["']|["']$/g, "") }));
 
 export async function POST(req) {
   if (!process.env.GEMINI_API_KEY) return fail("not_granted", 503, "GEMINI_API_KEY가 설정되지 않았습니다.");

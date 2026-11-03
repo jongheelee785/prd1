@@ -5,9 +5,20 @@ import pg from "pg";
 
 // Supabase 연결 정보는 서버 환경 변수에서만 읽는다. 서비스(secret) 키는 브라우저로 보내지 않는다.
 // Vercel의 Supabase 연동은 SUPABASE_URL·SUPABASE_SERVICE_ROLE_KEY를, 직접 넣을 때는 SUPABASE_SECRET_KEY도 받는다.
-const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
-const sb = url && key ? createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }) : null;
+// 붙여 넣을 때 섞여 든 공백·따옴표는 떼어 낸다. 값이 잘못되면 빌드를 멈추지 않고 configError로 알린다.
+const clean = v => String(v || "").trim().replace(/^["']|["']$/g, "").trim();
+const url = clean(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL);
+const key = clean(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY);
+export let configError = "";
+let sb = null;
+if (url || key) {
+  if (!/^https:\/\/[^\s/]+/.test(url)) configError = "SUPABASE_URL이 https://로 시작하는 Project URL이 아닙니다.";
+  else if (!key) configError = "SUPABASE_SERVICE_ROLE_KEY가 비어 있습니다.";
+  else {
+    try { sb = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }); }
+    catch (e) { configError = "Supabase 연결 정보를 확인해 주세요: " + e.message; }
+  }
+}
 
 // 환경 변수가 없으면(로컬 개발) 서버 메모리에 둔다. 재시작하면 사라진다.
 const mem = globalThis.__lvcMem || (globalThis.__lvcMem = { h: {}, n: {} });
